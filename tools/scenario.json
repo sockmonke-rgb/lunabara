@@ -1,0 +1,54 @@
+[
+ [
+  "wait",
+  3
+ ],
+ [
+  "js",
+  "__lb.setView('orbit'); __lb.capys.forEach((o,i)=>{ if(i!==3) o.root.visible=false; }); const c=__lb.capys[3]; c.x=-1.2; c.z=-1.0; c.state='idle'; c.timer=30; c.place=null; c.yaw=0.8; __lb.follow(c); __lb.camera.position.set(1.6,1.7,1.4); __lb.controls.target.set(-1.2,0.7,-1.0); 'staged '+c.name"
+ ],
+ [
+  "wait",
+  0.6
+ ],
+ [
+  "js",
+  "const c=__lb.capys[3]; c.waveCD=0; c.waveT=0; __lb.startWave(c); 'wave'"
+ ],
+ [
+  "wait",
+  1.2
+ ],
+ [
+  "shot",
+  "01-wave"
+ ],
+ [
+  "js",
+  "__lb.capys.forEach(o=>o.root.visible=true); const C=__lb.colony; C.reactor=100; C.md=100; C.launched=6; C.drops=1; __lb.landerS.cool=0; __lb.speed=8; 'lander armed'"
+ ],
+ [
+  "wait",
+  44.5
+ ],
+ [
+  "js",
+  "const i=__lb.STATIONS.findIndex(q=>q.label==='Landing pad'); __lb.goStation(i); __lb.setView('shoulder'); __lb.speed=1; __lb.landerS.state"
+ ],
+ [
+  "wait",
+  7
+ ],
+ [
+  "shot",
+  "02-lander-descent"
+ ],
+ [
+  "wait",
+  11
+ ],
+ [
+  "shot",
+  "03-crewmate-steps-off"
+ ]
+]

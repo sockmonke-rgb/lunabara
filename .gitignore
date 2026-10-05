@@ -1,0 +1,17 @@
+# Render output from tools/shots.py
+out/
+shots/
+
+# three.js r128 copies that tools/shots.py loads locally (fetched separately, not committed)
+tools/three.min.js
+tools/OrbitControls.js
+three.js/
+
+# Python and Node clutter
+__pycache__/
+*.pyc
+node_modules/
+
+# OS clutter
+.DS_Store
+Thumbs.db

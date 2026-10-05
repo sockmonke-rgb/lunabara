@@ -1,0 +1,13 @@
+{
+  "name": "lunabara",
+  "version": "0.51.0",
+  "description": "3D moon colony sim with capybaras",
+  "private": true,
+  "author": "Mark Florentino LLC",
+  "scripts": {
+    "test": "bash tools/test-all.sh index.html"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
