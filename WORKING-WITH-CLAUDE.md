@@ -8,6 +8,7 @@ Suggested project instructions (paste into the project's custom instructions):
 
 - Each change is a numbered probe (0.7, 0.8…) published to the same artifact link, so the phone always opens the latest.
 - Older builds stay in the artifact's version history, so an old build can run alongside a new one.
+- Each probe is also committed to the GitHub repo, `sockmonke-rgb/lunabara` (as `index.html`, with the changelog, docs and `tools/`), and pushed to `main`. `npm test` there runs every headless check.
 - Every build bumps the version in the title chip and the first line of Diag.
 - **Every publish also updates the project:** the build file, CHANGELOG, and any doc the change touches. 0.40 went live without its notes or file reaching the project, and 0.41 had to reconstruct them from the code.
 - Before building, Claude reads the live artifact, not just the project copy, and builds on whichever is newer.
