@@ -4,6 +4,14 @@ Lunabara was called Lunarium up to 0.33.
 
 Probe builds 0.1–0.6 were published as the "Astrobara V4 3D probe". Device results are from an iPhone (iOS 18.7, dpr 3) inside the Claude app.
 
+## 0.54
+On device (0.53): on the Landing pad camera the lander came down off screen; the shot showed only stars.
+- **The pad camera follows the lander all the way down.** The old shot tilted up to 22 m at most, but a lander starts its descent at 70 m, so most of the landing happened above the frame. The camera now aims at the lander while it's high, pulling back and up as it climbs, and eases onto the pad for touchdown. While tracking, it follows tightly instead of lagging behind. The same goes for the game view at the pad (GUIDE).
+- **Landers fly a real approach.** They come in from Earth's side of the sky on a slanting path, leaning back into the braking burn, and only the last stretch is straight down. On lift-off they rise straight up, then pitch over toward Earth.
+- **The landing crowd moved out of the shot.** The capybaras who come to watch stood between the pad camera and the pad, so a helmet filled the frame at touchdown. They now watch from the pad's south-east side.
+
+Checked here: smoke, restore, collide and navsim pass (5 seeds, 0 crossings). Renders of a full descent, portrait and landscape (844×390), show the lander in frame from 70 m to touchdown, with nothing in front of it. Not verified on device yet.
+
 ## 0.53
 On device (0.52): the chat, look and hide-UI buttons showed on top of the loading screen.
 - **The loading screen now covers everything.** The round buttons, the camera-feed label and the lend-a-hand button stay hidden until the colony is up, and the loading screen sits above all of them.

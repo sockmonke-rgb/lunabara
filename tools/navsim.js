@@ -36,8 +36,8 @@ const PLACES={
 PLACES.lab={x:LABX,z:LABZ-2.8,r:0.3}; PLACES.survey={x:-5,z:-12,r:0}; PLACES.reactor={x:RX+3.1,z:RZ,r:0};
 PLACES.lifesupport={x:LSX,z:LSZ-2,r:0.3}; PLACES.peelscoop={x:PLX,z:PLZ-3.15,r:0.2}; PLACES.compost={x:CBX+0.5,z:CBZ-1.5,r:0.2};
 PLACES.sleep={x:HABX+5.5,z:HABZ+0.1,r:0.2}; PLACES.spread={x:CBX+0.5,z:CBZ-1.5,r:0.2}; PLACES.massdriver={x:22.88,z:1.646,r:0};
-PLACES.unload={x:LZX+2.7,z:LZZ,r:0.9}; PLACES.deliver={x:HABX+5.4,z:HABZ-1.2,r:0.2}; PLACES.padwatch={x:LZX+4.4,z:LZZ-1.2,r:0};
-const PAD_SPOTS=[[-18.7,6.5],[-18.9,5.2],[-19.1,4.1],[-17.7,5.6]];   // where the colony watches a landing
+PLACES.unload={x:LZX+2.7,z:LZZ,r:0.9}; PLACES.deliver={x:HABX+5.4,z:HABZ-1.2,r:0.2}; PLACES.padwatch={x:LZX+2.2,z:LZZ-3.6,r:0};
+const PAD_SPOTS=[[-20.8,2.9],[-21.6,2.6],[-20.1,3.4],[-20.6,2.1]];   // 0.54: south-east of the pad   // where the colony watches a landing
 const SS=[[-5,-12],[6,-10],[5,-15],[-3,-17],[9,-9],[-9,-10.5],[-6.5,-15.5],[8,-14]];
 
 // 0.49: ramps into the wallow (same numbers as the game): walkers go in and out over a ramp, never through the side
