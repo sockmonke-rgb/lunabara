@@ -4,6 +4,12 @@ Lunabara was called Lunarium up to 0.33.
 
 Probe builds 0.1–0.6 were published as the "Astrobara V4 3D probe". Device results are from an iPhone (iOS 18.7, dpr 3) inside the Claude app.
 
+## 0.53
+On device (0.52): the chat, look and hide-UI buttons showed on top of the loading screen.
+- **The loading screen now covers everything.** The round buttons, the camera-feed label and the lend-a-hand button stay hidden until the colony is up, and the loading screen sits above all of them.
+
+Checked here: smoke passes. A render taken while the page was still marked as loading showed none of the round buttons. Not verified on device yet.
+
 ## 0.52
 On device (0.51): 60 fps at the Wallow with the bathhouse (509 draw calls, sim 1.3 ms). The Diag window couldn't be closed by tapping the view behind it. In landscape its Close button was off the screen, and the hide-UI button sat on top of it.
 - **Tap anywhere outside the Diag window to close it.** A light shade sits behind the window while it's open, and a tap on the shade closes it without also tapping the scene. Close and Escape still work.

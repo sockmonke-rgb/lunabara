@@ -22,7 +22,7 @@ Open the build, wait about 20 seconds, then tap the fps panel (top right) → **
 
 | # | Check | Pass |
 | --- | --- | --- |
-| D0 | Boot | Splash fades in and out smoothly; no black flash |
+| D0 | Boot | Splash fades in and out smoothly; no black flash; no buttons or icons over the loading screen (0.53) |
 | D1 | Startup fps by second | Reaches 60 within a few seconds; no second at 1 |
 | D2 | Normal view fps | 55–60, sim under 2 ms |
 | D3 | Pixel view fps | 60; toggling doesn't freeze |

@@ -107,7 +107,7 @@
         border-radius:8px;font:11px/1.45 var(--mono);padding:8px;box-sizing:border-box;-webkit-user-select:text;user-select:text;}
   #diag .row{flex:none;display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:var(--dim);}
   #diag button{min-height:36px;padding:8px 14px;}
-  #load{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--sky);color:var(--dim);font:11px var(--mono);letter-spacing:.06em;z-index:6;transition:opacity .8s ease;}
+  #load{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--sky);color:var(--dim);font:11px var(--mono);letter-spacing:.06em;z-index:20;transition:opacity .8s ease;}
   #load.done{opacity:0;pointer-events:none;}
   #load canvas{width:112px;height:70px;image-rendering:pixelated;}
   #load .t{font-family:var(--pixel);font-size:30px;letter-spacing:.14em;color:var(--text);}
@@ -115,6 +115,8 @@
   #load .bar i{display:block;height:100%;width:0;background:var(--sun);transition:width .2s;}   /* 0.51: across the whole screen, and full before it fades */
   #top, #bottom{transition:opacity .8s;}
   body.booting #top, body.booting #bottom{opacity:0;}
+  /* 0.53: the round buttons (chat, look, hide UI) stay hidden behind the loading screen too */
+  body.booting #bChat, body.booting #lookBtn, body.booting #hudToggle, body.booting #feed, body.booting #assist{opacity:0;pointer-events:none;}
   /* 0.40: the colony is a livestream. Feed label (which camera), viewer count, chat and event log */
   #feed{position:fixed;left:16px;top:calc(env(safe-area-inset-top,0px) + 150px);pointer-events:none;z-index:1;font:600 10px/1.5 var(--mono);letter-spacing:.08em;
         color:#f4efe4;text-shadow:0 1px 2px #000,0 0 8px rgba(0,0,0,.75);text-transform:uppercase;max-width:62%;}
@@ -182,7 +184,7 @@
 <div id="top" class="bar">
   <div id="title" class="chip">
     <div class="name">LUNABARA</div>
-    <div class="sub">probe 0.52 · Shackleton rim</div>
+    <div class="sub">probe 0.53 · Shackleton rim</div>
     <div class="sub colony" id="colony">O2 -- · reactor -- · samples --</div>
     <div class="sub colony" id="colony2">yuzu -- · peels -- · compost --</div>
     <div class="sub colony" id="colony3">samples -- · He-3 -- · sent -- · pups --</div>
@@ -298,7 +300,7 @@ else if(!THREE.OrbitControls){ window.__lib='fallback: plain load (controls)'; d
 <script>
 (function(){
 'use strict';
-const BUILD='0.52';
+const BUILD='0.53';
 if(!window.THREE || !THREE.OrbitControls){
   document.getElementById('loadMsg').textContent='The 3D library did not load. Check the connection and reload.';
   return;
