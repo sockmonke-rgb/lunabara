@@ -6,7 +6,7 @@ Lunabara (called Lunarium up to 0.33) grew out of the Astrobara V4 3D test scene
 
 - **Built by:** Mark Florentino LLC
 - **Built with:** Claude (credited here and on the store page, not in the game)
-- **Current build:** probe 0.51 (`index.html`)
+- **Current build:** probe 0.52 (`index.html`)
 
 ## How it runs
 
@@ -35,7 +35,7 @@ Lunabara (called Lunarium up to 0.33) grew out of the Astrobara V4 3D test scene
 | Speed | ×1 → ×2 → ×4 → ×8 → Paused |
 | Lend a hand | View → game at any station (0.50; was shoulder or POV) while it has something to do: a small game on the right (ring, sweep, hold or tap fast) helps the colony. See CHANGELOG 0.48 for what each station's game does |
 | Eye (top right) | Hide UI: clears the interface in any view; tap again to bring it back (H on a keyboard) |
-| Tap the fps panel | Diagnostics to paste back to Claude, Test lander, Test shake, and Reset colony |
+| Tap the fps panel | Diagnostics to paste back to Claude, Test lander, Test shake, and Reset colony. Tap outside the window to close it |
 
 The **Wallow** station is the postcard shot: a capybara in the wallow under the glass bathhouse, helmet off and a yuzu on its head, watching Earth. Capybaras come in by the airlock and walk down a ramp into the water, and the floating yuzu drift aside as they pass. The **Habitat** station is the night-vision camera over the sleepers. In shoulder, POV and every station, tap the screen to hide or show the interface.
 

@@ -74,6 +74,7 @@ Open the build, wait about 20 seconds, then tap the fps panel (top right) → **
 | D53 | Spacing | Orbit over the base: buildings have room between them; the Wallow, Comms and Nursery shots still frame Earth |
 | D54 | Loading | The bar spans the screen and is full when the splash fades |
 | D55 | Wheel and greetings | A runner's body and head bounce and sway with its stride; after a nuzzle, two capybaras step apart before dropping, never into each other |
+| D56 | Diag window | Opens on a tap of the fps panel; a tap on the view behind it closes it; in landscape Close is on screen |
 | D34 | Crewmates kept | Close the app fully after a crewmate has arrived, reopen: the crewmate is still there (Diag `crew:` line) |
 | D10 | Progress kept | Close the app fully, reopen: "Colony restored" and the same reactor, samples, pups; Diag save line reads account on |
 | D21 | Reset | Diag → Reset colony twice: page reloads to a fresh colony; reopening doesn't bring the old one back |

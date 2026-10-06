@@ -97,10 +97,15 @@
     button{padding-block:8px;font-size:10px;} /* keep the 44 px tap height */
   }
   #diag{position:fixed;left:16px;right:16px;top:50%;transform:translateY(-50%);max-width:520px;margin:auto;
-        background:rgba(10,10,12,.94);border:1px solid var(--line);border-radius:12px;padding:12px;z-index:5;}
-  #diag textarea{width:100%;height:220px;background:#000;color:var(--text);border:1px solid var(--line);
+        background:rgba(10,10,12,.94);border:1px solid var(--line);border-radius:12px;padding:12px;z-index:9;
+        /* 0.52: always fits the screen (in landscape Close fell off the bottom); the text box gives up height first */
+        max-height:calc(100% - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));box-sizing:border-box;display:flex;flex-direction:column;}
+  #diag[hidden]{display:none;}
+  #diagShade{position:fixed;inset:0;z-index:8;background:rgba(0,0,0,.28);}
+  #diagShade[hidden]{display:none;}
+  #diag textarea{width:100%;height:220px;flex:1 1 auto;min-height:56px;background:#000;color:var(--text);border:1px solid var(--line);
         border-radius:8px;font:11px/1.45 var(--mono);padding:8px;box-sizing:border-box;-webkit-user-select:text;user-select:text;}
-  #diag .row{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:var(--dim);}
+  #diag .row{flex:none;display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:var(--dim);}
   #diag button{min-height:36px;padding:8px 14px;}
   #load{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--sky);color:var(--dim);font:11px var(--mono);letter-spacing:.06em;z-index:6;transition:opacity .8s ease;}
   #load.done{opacity:0;pointer-events:none;}
@@ -177,7 +182,7 @@
 <div id="top" class="bar">
   <div id="title" class="chip">
     <div class="name">LUNABARA</div>
-    <div class="sub">probe 0.51 · Shackleton rim</div>
+    <div class="sub">probe 0.52 · Shackleton rim</div>
     <div class="sub colony" id="colony">O2 -- · reactor -- · samples --</div>
     <div class="sub colony" id="colony2">yuzu -- · peels -- · compost --</div>
     <div class="sub colony" id="colony3">samples -- · He-3 -- · sent -- · pups --</div>
@@ -236,6 +241,7 @@
 <div id="assist" hidden><div class="fb" id="assistFb"></div><div class="gbar" id="assistBar"><i class="zone" id="assistZone"></i><i class="fill" id="assistFill"></i><i class="needle" id="assistNeedle"></i></div><div class="ring" id="assistRing"></div><button id="bAssist" aria-label="Lend a hand"><small id="aAct">TAP</small><span id="aVerb">WELD</span></button><div class="lbl" id="assistLbl">tap on the ring</div></div>
 <div id="caption"><div class="n" id="capName"></div><div class="v" id="capVerb"></div></div>
 
+<div id="diagShade" hidden></div>
 <div id="diag" hidden>
   <textarea id="diagText" readonly></textarea>
   <div class="row">
@@ -292,7 +298,7 @@ else if(!THREE.OrbitControls){ window.__lib='fallback: plain load (controls)'; d
 <script>
 (function(){
 'use strict';
-const BUILD='0.51';
+const BUILD='0.52';
 if(!window.THREE || !THREE.OrbitControls){
   document.getElementById('loadMsg').textContent='The 3D library did not load. Check the connection and reload.';
   return;
@@ -2745,7 +2751,7 @@ document.querySelectorAll('#looks .seg[data-k]').forEach(g=>g.addEventListener('
 const MATRIX_PRESET={look:'ascii',style:3,rain:1,ramp:'kana',tune:'refined',edges:0,cell:6};
 $('depthIn').addEventListener('input',()=>{ LOOK.depth=Number($('depthIn').value); applyLook(); syncLookPanel(); saveLook(); });
 $('cellIn').addEventListener('input',()=>{ LOOK.cell=Number($('cellIn').value); applyLook(); syncLookPanel(); saveLook(); });
-$('lookBtn').onclick=()=>{ const L=$('looks'); L.hidden=!L.hidden; document.body.classList.toggle('lookopen',!L.hidden); if(!L.hidden){ syncLookPanel(); $('diag').hidden=true; } };
+$('lookBtn').onclick=()=>{ const L=$('looks'); L.hidden=!L.hidden; document.body.classList.toggle('lookopen',!L.hidden); if(!L.hidden){ syncLookPanel(); setDiag(false); } };
 $('lookClose').onclick=()=>{ $('looks').hidden=true; document.body.classList.remove('lookopen'); };
 $('lookReset').onclick=()=>{ Object.assign(LOOK,LOOK_DEFAULT); buildAtlas(); applyLook(); syncLookPanel(); saveLook(); applyStreamToggles(); };
 $('bChat').onclick=()=>{ LOOK.chat=LOOK.chat?0:1; applyStreamToggles(); saveLook(); };
@@ -2770,14 +2776,17 @@ function tourStep(){
 }
 // 0.45: Speed cycles ×1 → ×2 → ×4 → ×8 → Paused → ×1. Paused stops the colony; the cameras and chat still work.
 $('bSpeed').onclick=()=>{ speed={1:2,2:4,4:8,8:0,0:1}[speed]; const b=$('bSpeed'); b.textContent=speed?'Speed ×'+speed:'Paused'; b.setAttribute('aria-pressed',speed!==1?'true':'false'); };
-$('readout').onclick=()=>{ $('diagText').value=diagText(); $('diagMsg').textContent='Copy this and paste it back to Claude.'; $('diag').hidden=false; };
-$('bBuzz').onclick=()=>{ buzz([90,70,90,70,160],'test'); $('diag').hidden=true; shakeCam(0.22,1.4); };
-$('bClose').onclick=()=>{ $('diag').hidden=true; };
+// 0.52: the Diag sits over a shade; a tap anywhere outside it (on the view) closes it
+function setDiag(on){ $('diag').hidden=!on; $('diagShade').hidden=!on; }
+$('diagShade').addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); setDiag(false); });
+$('readout').onclick=()=>{ $('diagText').value=diagText(); $('diagMsg').textContent='Copy this and paste it back to Claude.'; setDiag(true); };
+$('bBuzz').onclick=()=>{ buzz([90,70,90,70,160],'test'); setDiag(false); shakeCam(0.22,1.4); };
+$('bClose').onclick=()=>{ setDiag(false); };
 // 0.42: a test lander on demand, so the landing can be seen before the colony earns one. It doesn't count as a delivery and brings no crewmate.
-$('bLander').onclick=()=>{ $('diag').hidden=true;
+$('bLander').onclick=()=>{ setDiag(false);
   if(landerS.state==='idle'){ landerS.state='inbound'; landerS.t=12; landerS.test=true; logMsg('Test lander from Earth · ETA 12 s'); callCrowd(); }
   const i=STATIONS.findIndex(q=>q.label==='Landing pad'); if(i>=0){ goStation(i); setView('shoulder'); } };
-window.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('diag').hidden){ $('diag').hidden=true; return; } if(e.key.toLowerCase()==='h'){ $('hudToggle').click(); } });
+window.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('diag').hidden){ setDiag(false); return; } if(e.key.toLowerCase()==='h'){ $('hudToggle').click(); } });
 // Reset needs two taps: the first arms it for four seconds
 let resetArmed=0;
 $('bReset').onclick=async ()=>{

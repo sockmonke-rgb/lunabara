@@ -4,6 +4,14 @@ Lunabara was called Lunarium up to 0.33.
 
 Probe builds 0.1–0.6 were published as the "Astrobara V4 3D probe". Device results are from an iPhone (iOS 18.7, dpr 3) inside the Claude app.
 
+## 0.52
+On device (0.51): 60 fps at the Wallow with the bathhouse (509 draw calls, sim 1.3 ms). The Diag window couldn't be closed by tapping the view behind it. In landscape its Close button was off the screen, and the hide-UI button sat on top of it.
+- **Tap anywhere outside the Diag window to close it.** A light shade sits behind the window while it's open, and a tap on the shade closes it without also tapping the scene. Close and Escape still work.
+- **The Diag window always fits the screen.** In landscape the text box gets shorter, so the buttons stay on screen, Close included.
+- The Diag window now sits above the round buttons in the top right.
+
+Checked here: smoke, reset and errlog pass. A headless render at 844×390 landscape shows Close on screen, and a tap on the shade closes the window. Not verified on device yet.
+
 ## 0.51: room to breathe, and a bathhouse
 On device (0.50). Feedback:
 - The wheel runner's head and body didn't move with its legs.
