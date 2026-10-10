@@ -4,6 +4,29 @@ Lunabara was called Lunarium up to 0.33.
 
 Probe builds 0.1–0.6 were published as the "Astrobara V4 3D probe". Device results are from an iPhone (iOS 18.7, dpr 3) inside the Claude app.
 
+## 0.56: a straight landing, a clear pad shot, and pieces from NASA's renderings
+On device (0.55): top view 56.6 fps on average with a low of 29, worst frame 78 ms, 1288 draw calls and 391k triangles (9 adults, 3 pups). Landing pad with a lander down: 60 fps, 471 calls, 199k triangles. The lander came down at an angle, which read as an uncontrolled landing, and a pole stood in the middle of the pad camera's shot. Mark also sent NASA's moon-base renderings gallery.
+
+**The landing**
+- **Landers come straight down** over the pad, upright the whole way, turning slowly onto their landing heading. The descent still takes 22 s, falling fast and then braking. Lift-off is unchanged: straight up, then pitching over toward Earth. (0.54 brought them in on a slant from Earth's side, leaning back.)
+- **The pad cameras stay on the lander** all the way down, aimed at its middle. They used to ease onto the pad below 14 m, which cut off the top of the taller lander.
+
+**The pad shot**
+- The pole in the middle of the shot was one of 0.55's lamp masts. There are now two masts, south-west and south, outside the Landing pad's shoulder, POV and game shots (they show in the orbit view). The pad's lamp is the south-west one.
+- **The pad cameras are higher:** shoulder 7.2 m (was 5.2) and 7.5 m out (was 7); game view 6 m (was 4.2).
+
+**From NASA's moon-base renderings.** Only the captions could be read here; the images themselves weren't reachable from this workspace. No agency marks, as before.
+- **Solar arrays on their landers.** Each solar mast now stands on the small lander that delivered it: a foil body under a deck on four legs, a three-stage mast, and two tall blankets either side that turn with the sun. Same three places. The base is wider than the old pole, so the obstacle grew (radius 1.0, was 0.6), the dust-brushing spot moved out to match, and pups chase dust in a tighter circle. navsim has the new sizes.
+- **A radioisotope generator at the ice mine.** A finned drum on a stand at the bench's edge, over the shadowed crater, with warm rings, a faint warm glow on the ground and a cable to the rig. It sits inside the rig's footprint, so it adds no obstacle and no real light.
+- **A hopper drone.** A small foil box on four legs with two solar wings. It parks at the east end of the rim. Every minute or so it hops into the shadowed crater (three spots in turn), with a burn at each end of a ballistic arc. It sits there 20–30 s with its light blinking, then hops home. It runs on colony time, so Pause stops it.
+- Not brought in: the rovers (VIPER, logistics, pressurised), the regolith processing plant, the cargo return vehicle and the satellites.
+
+**Fewer draws far off.** The top view's cost was almost all capybaras: about 51 parts each, 612 draws for 12 of them. Now a capybara more than 24 m from the camera hides its small parts: the face, the hip and knee balls, the knee bellows, the pack trim, the chest box and its lights, and the lamp lenses. That's about 30 fewer draws each. It switches back at 21 m, so nothing flickers at the boundary. The wheel's rims and spokes are now one mesh per material, and the greenhouse's grass, fruit and fruit leaves no longer cast shadows (58 shadow draws). Headless, with a colony like yours (9 adults, 3 pups), the top view went from 1116 to 690 draw calls and from 378k to 283k triangles. Close views are unchanged.
+
+**Bathhouse glass.** `collide.js` caught pups trailing a parent past the bathhouse door grazing 1–4 cm into the glass (4 crossings in 20 minutes). The bigger solar bases changed the routes slightly, which exposed it. Walkers outside the dome are now held 12 cm off the glass, except in the doorway.
+
+Checked here: all tests pass, and `props.js` now also keeps everyone 0.8 m from the hopper's spots. Renders: a test landing on the pad shoulder camera at 56, 24 and 12 m and near touchdown, upright and centred; the pad's shoulder, POV and game shots with no mast in them; the orbit from the west; a solar lander; the generator; the hopper parked and mid-hop; and the top view. Not verified on device: the top view's fps (please send a Diag from there again), whether parts visibly pop when zooming out past about 24 m, and how the descent feels.
+
 ## 0.55: structures from the moon-base references
 Mark sent seven reference images of a planned lunar base (renders and a phase chart) and asked to bring some of its structures into Lunabara, with no logos or nations. Everything below is the colony's own kit: no agency, company or programme marks, no flags, no lettering.
 

@@ -16,7 +16,7 @@ const POOL={x:PLX,z:PLZ}, DOME_R=4.4;
 let seed=+(process.argv[2]||7); const rand=()=>{seed=(seed*16807)%2147483647; return seed/2147483647;};
 const MD=[1.5,5,8.5].map(z=>({x:19.5+Math.cos(1.25)*z,z:-2.5+Math.sin(1.25)*z,r:1.1,place:'massdriver'}));
 const obstacles=[{x:HABX+0.8,z:HABZ,r:3.9,place:'habitat'},{x:GHX,z:GHZ,r:3.6,place:'greenhouse'},{x:PLX,z:PLZ,r:2.4,place:'wallow'},{x:PLX,z:PLZ,r:DOME_R,place:'bathhouse'},{x:WHX,z:WHZ,r:1.6,place:'wheel'},
-{x:-19.5,z:13.5,r:0.6,place:'array'},{x:19.5,z:-15,r:0.6,place:'array'},{x:-3,z:20.5,r:0.6,place:'array'},{x:CMX,z:CMZ,r:1.0,place:'comms'},{x:1.2,z:-15.2,r:1.3,place:'mine'},{x:LABX,z:LABZ,r:2.1,place:'lab'},{x:RX,z:RZ,r:2.5,place:'reactor'},{x:LSX,z:LSZ,r:1.3,place:'lifesupport'},{x:CBX,z:CBZ,r:0.95,place:'compost'}].concat(MD,[{x:NX,z:NZ,r:1.5,place:'nursery'},
+{x:-19.5,z:13.5,r:1.0,place:'array'},{x:19.5,z:-15,r:1.0,place:'array'},{x:-3,z:20.5,r:1.0,place:'array'},{x:CMX,z:CMZ,r:1.0,place:'comms'},{x:1.2,z:-15.2,r:1.3,place:'mine'},{x:LABX,z:LABZ,r:2.1,place:'lab'},{x:RX,z:RZ,r:2.5,place:'reactor'},{x:LSX,z:LSZ,r:1.3,place:'lifesupport'},{x:CBX,z:CBZ,r:0.95,place:'compost'}].concat(MD,[{x:NX,z:NZ,r:1.5,place:'nursery'},
 {x:LZX,z:LZZ,r:1.6,place:'pad'},{x:16.637,z:16.092,r:0.45,place:'commsdesk'},
 {x:18.7,z:13.9,r:0.5,place:'uplink'},{x:18.85,z:15.05,r:0.5,place:'uplink'},{x:18.5,z:16.2,r:0.5,place:'uplink'}]);   // 0.55: the uplink dishes beside the comms tower
 const roverOb={x:0,z:0,r:1.3,place:'rover'};
@@ -32,7 +32,7 @@ const PLACES={
   wheel:{x:WHX,z:WHZ,r:0,single:true},
   mine:{x:2.9,z:-13.6,r:0.5},
   comms:{x:CMX-1.2,z:CMZ+1.5,r:0},
-  array:{x:-18.3,z:12.7,r:0.6},
+  array:{x:-17.8,z:12.25,r:0.5},   // 0.56: the arrays stand on lander bases (r 1.0), and the brushing spot moved out
 };
 // Every other destination in the game (kept here, right after PLACES, so resyncing the routing code never removes it)
 PLACES.lab={x:LABX,z:LABZ-2.8,r:0.3}; PLACES.survey={x:-5,z:-12,r:0}; PLACES.reactor={x:RX+3.1,z:RZ,r:0};

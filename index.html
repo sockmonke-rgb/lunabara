@@ -184,7 +184,7 @@
 <div id="top" class="bar">
   <div id="title" class="chip">
     <div class="name">LUNABARA</div>
-    <div class="sub">probe 0.55 · Shackleton rim</div>
+    <div class="sub">probe 0.56 · Shackleton rim</div>
     <div class="sub colony" id="colony">O2 -- · reactor -- · samples --</div>
     <div class="sub colony" id="colony2">yuzu -- · peels -- · compost --</div>
     <div class="sub colony" id="colony3">samples -- · He-3 -- · sent -- · pups --</div>
@@ -300,7 +300,7 @@ else if(!THREE.OrbitControls){ window.__lib='fallback: plain load (controls)'; d
 <script>
 (function(){
 'use strict';
-const BUILD='0.55';
+const BUILD='0.56';
 if(!window.THREE || !THREE.OrbitControls){
   document.getElementById('loadMsg').textContent='The 3D library did not load. Check the connection and reload.';
   return;
@@ -584,7 +584,8 @@ function mesh(geo,mat,x,y,z){ const m=new THREE.Mesh(geo,mat); m.position.set(x|
 const rand2=rng(55055);   // its own sequence, so the rocks and greenhouse keep their old places
 const LAMP_HEAD=std(0x2a2723,{emissive:0xffe2b8,emissiveIntensity:0.6,roughness:0.4});   // lamp fixtures (defined here since 0.55: the pad masts use it too)
 const PAD_AMBER=std(0xf0a030,{roughness:0.6,emissive:0x5a3408,emissiveIntensity:0.4});
-const PAD_MASTS=[[140,3.6],[185,3.6],[230,3.6],[275,3.7]];   // degrees from +x toward +z, and distance from the pad's middle: the far side, clear of every route
+const PAD_MASTS=[[238,3.6],[272,3.7]];   // degrees from +x toward +z, and distance from the pad's middle: south-west and south, clear of every route
+// and (0.56) out of every pad camera's frame: the masts at 140° and 185° stood right behind the pad in the station shots
 const _up=new THREE.Vector3(0,1,0), _zf=new THREE.Vector3(0,0,1);
 function strut(a,b,w,mat,d){   // a thin box from point a to point b (THREE.Vector3s), in the parent's space
   const v=new THREE.Vector3().subVectors(b,a), L=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z), m=new THREE.Mesh(new THREE.BoxGeometry(w,d||w,L),mat);
@@ -786,6 +787,7 @@ function steerTo(x,z,tx,tz){
 // The glass is solid: a step that would cross the dome anywhere but the airlock is undone
 function glassBlock(c,px,pz){ let hit=false; if(inDome(px,pz)!==inDome(c.x,c.z) && !inDoorway(c.x,c.z) && !inDoorway(px,pz)){ c.x=px; c.z=pz; hit=true; }
   if(inDome(c.x,c.z) && !inDoorway(c.x,c.z)){ const ox=c.x-POOL.x, oz=c.z-POOL.z, od=Math.hypot(ox,oz), R=DOME_R-0.35; if(od>R){ c.x=POOL.x+ox/od*R; c.z=POOL.z+oz/od*R; } }   // and keep off the glass from inside
+  else if(!inDoorway(c.x,c.z)){ const ox=c.x-POOL.x, oz=c.z-POOL.z, od=Math.hypot(ox,oz), R=DOME_R+0.12; if(od<R && od>1e-3){ c.x=POOL.x+ox/od*R; c.z=POOL.z+oz/od*R; } }   // 0.56: and from outside (a pup trailing its parent past the door could graze into the glass's own thickness)
   return hit; }
 function walkerIgn(c,base){ const w=inPool(c.x,c.z) || POOL_RAMPS.some(r=>onRamp(c.x,c.z,r)!==null), d=Math.hypot(c.x-POOL.x,c.z-POOL.z)<DOME_R+0.1 || inDoorway(c.x,c.z);   // a walker on the glass's inside edge counts as inside
   return w ? ['wallow','bathhouse'] : d ? (base||[]).concat(['bathhouse']) : (base||[]); }
@@ -798,22 +800,30 @@ for(let i=0;i<14;i++){ const a=i/14*Math.PI*2; const s=mesh(new THREE.CylinderGe
 wheelSpin.position.y=WC; wheelBase.add(wheelSpin);
 [-1,1].forEach(sx=>[-0.62,0.62].forEach(zz=>{ const leg=mesh(new THREE.CylinderGeometry(0.06,0.06,1.8,5),M.darkSteel,sx*0.45,0.78,zz); leg.rotation.z=-sx*0.5; wheelBase.add(leg); }));
 { const axle=mesh(new THREE.CylinderGeometry(0.08,0.08,1.4,6),M.darkSteel,0,WC,0); axle.rotation.x=Math.PI/2; wheelBase.add(axle); }
-at(wheelBase,WHX,WHZ); wheelBase.rotation.y=0.35; shadowAll(wheelBase);
+at(wheelBase,WHX,WHZ); wheelBase.rotation.y=0.35; shadowAll(wheelBase); mergeGroup(wheelSpin); mergeGroup(wheelBase,wheelSpin.children.slice());   // 0.56: rims and spokes turn as one mesh per material
 obstacles.push({x:WHX,z:WHZ,r:1.6,place:'wheel'});
 
-// Solar masts (tall vertical arrays that turn to follow the low sun)
+// Solar masts (tall vertical arrays that turn to follow the low sun). 0.56: each stands on the small lander that delivered it,
+// after the lander-mounted vertical arrays in NASA's moon-base renderings: a foil-wrapped deck on four legs, a telescoping
+// mast, and two long blankets either side of it that turn to face the sun. Same places as before.
 const masts=[];
 MAST_AT.forEach(([mx,mz])=>{
-  const g=new THREE.Group();
-  g.add(mesh(new THREE.CylinderGeometry(0.12,0.2,9,6),M.steel,0,4.5,0));
-  const head=new THREE.Group(); head.position.y=6.4;
-  head.add(mesh(new THREE.BoxGeometry(3.2,5,0.08),M.panel,0,0,0));
-  head.add(mesh(new THREE.BoxGeometry(3.3,0.08,0.12),M.foil,0,2.5,0));
-  head.add(mesh(new THREE.BoxGeometry(3.3,0.08,0.12),M.foil,0,-2.5,0));
+  const g=new THREE.Group(), v=(x,y,z)=>new THREE.Vector3(x,y,z);
+  g.add(mesh(new THREE.CylinderGeometry(0.62,0.7,0.8,8),M.foil,0,0.78,0).rotateY(Math.PI/8));       // body, in foil
+  g.add(mesh(new THREE.CylinderGeometry(0.8,0.8,0.1,8),M.hab,0,1.23,0).rotateY(Math.PI/8));         // deck
+  g.add(mesh(new THREE.CylinderGeometry(0.2,0.32,0.3,10,1,true),M.darkSteel,0,0.25,0));               // its spent engine
+  for(let k=0;k<4;k++){ const a=k*Math.PI/2+Math.PI/4, c=Math.cos(a), sn=Math.sin(a);
+    g.add(rodY(v(c*0.6,1.0,sn*0.6),v(c*0.86,0.05,sn*0.86),0.04,M.steel,5)); g.add(mesh(new THREE.CylinderGeometry(0.12,0.14,0.04,8),M.steel,c*0.86,0.02,sn*0.86)); }
+  [[0.12,1.28,4.4],[0.09,4.4,7.6],[0.065,7.6,10.4]].forEach(([r,y0,y1])=>g.add(mesh(new THREE.CylinderGeometry(r,r,y1-y0,8),M.steel,0,(y0+y1)/2,0)));   // telescoping mast
+  const head=new THREE.Group(); head.position.y=7.0;
+  [-1,1].forEach(sd=>{ head.add(mesh(new THREE.BoxGeometry(1.1,6.0,0.05),M.panel,sd*0.66,0,0));
+    head.add(mesh(new THREE.BoxGeometry(1.16,0.06,0.09),M.foil,sd*0.66,3.02,0)); head.add(mesh(new THREE.BoxGeometry(1.16,0.06,0.09),M.foil,sd*0.66,-3.02,0));
+    head.add(mesh(new THREE.BoxGeometry(0.04,6.0,0.07),M.foil,sd*1.22,0,0)); });
+  head.add(mesh(new THREE.BoxGeometry(2.6,0.05,0.05),M.steel,0,3.15,0));   // spreader at the top
   g.add(head);
-  at(g,mx,mz); shadowAll(g);
+  at(g,mx,mz); shadowAll(g); mergeGroup(head); mergeGroup(g,head.children.slice());   // the turning head merges on its own
   masts.push(head);
-  obstacles.push({x:mx,z:mz,r:0.6,place:'array'});
+  obstacles.push({x:mx,z:mz,r:1.0,place:'array'});   // 0.56: the lander base is wider than the old pole (was 0.6)
 });
 
 // Comms tower aimed at Earth
@@ -851,6 +861,21 @@ mine.add(mesh(new THREE.CylinderGeometry(0.72,0.72,0.25,12),M.ice,1.9,0.9,0.4));
 const MINE={x:1.2,z:-15.2};   // 0.49: on the bench (was 0.5,-16.5 on the cliff face)
 at(mine,MINE.x,MINE.z); shadowAll(mine);
 obstacles.push({x:MINE.x,z:MINE.z,r:1.3,place:'mine'});
+// 0.56: the mine's power, after the radioisotope generator in NASA's moon-base renderings: a finned drum on a stand at the
+// bench's edge, over the shadowed crater, warm enough to glow faintly on the ground round it, with a cable to the rig.
+// It sits inside the rig's own footprint, so it isn't another obstacle. No moving parts, no real light.
+{ const RX_=MINE.x-0.3, RZ_=MINE.z-1.15, gy=H(RX_,RZ_), g=new THREE.Group(); g.position.set(RX_,gy,RZ_); scene.add(g);
+  const finM=std(0x3b3835,{roughness:0.55,metalness:0.45,emissive:0x3a1608,emissiveIntensity:0.35}), hotM=std(0x401a0a,{emissive:0xff6a2a,emissiveIntensity:0.9,roughness:0.6});
+  g.add(mesh(new THREE.CylinderGeometry(0.2,0.2,0.62,12),finM,0,0.55,0));
+  for(let k=0;k<8;k++){ const a=k/8*Math.PI*2, f=mesh(new THREE.BoxGeometry(0.03,0.56,0.2),finM,Math.cos(a)*0.28,0.55,Math.sin(a)*0.28); f.rotation.y=-a; g.add(f); }
+  [0.27,0.83].forEach(y=>{ const r=mesh(new THREE.TorusGeometry(0.21,0.025,5,16),hotM,0,y,0); r.rotation.x=Math.PI/2; g.add(r); });
+  g.add(mesh(new THREE.CylinderGeometry(0.12,0.12,0.06,10),hotM,0,0.88,0));
+  for(let k=0;k<3;k++){ const a=k/3*Math.PI*2+0.3; g.add(rodY(new THREE.Vector3(Math.cos(a)*0.16,0.26,Math.sin(a)*0.16),new THREE.Vector3(Math.cos(a)*0.34,0.0,Math.sin(a)*0.34),0.02,M.darkSteel,4)); }
+  shadowAll(g); mergeGroup(g);
+  const glowM=new THREE.MeshBasicMaterial({map:glowTex('rgba(255,130,60,0.55)','rgba(255,80,20,0)'),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  const warm=mesh(new THREE.CircleGeometry(1.3,24),glowM,RX_,gy+0.04,RZ_); warm.rotation.x=-Math.PI/2; warm.renderOrder=2; scene.add(warm);
+  const tx=MINE.x+1.9-0.72, tz=MINE.z+0.4, pts=[[RX_+0.2,RZ_+0.1],[RX_+0.8,RZ_+0.25],[tx-0.5,tz-0.45],[tx,tz]].map(([x,z])=>new THREE.Vector3(x,H(x,z)+0.03,z));
+  const cab=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),20,0.022,5,false),M.darkSteel); cab.receiveShadow=true; scene.add(cab); }
 
 // Science lab with a sample bench and a small telescope
 const lab=new THREE.Group();
@@ -1121,7 +1146,7 @@ lampAt('Compost',CBX+0.62,H(CBX,CBZ)+1.7,CBZ+0.62,[CBX+0.62,CBZ+0.62],CBX-0.4,CB
 lampAt('Comms',CMX-0.25,H(CMX,CMZ)+2.7,CMZ+0.3,null,CMX-1.2,CMZ+1.5);
 { const p0=mdPt(-0.8); lampAt('Mass driver',p0.x,H(p0.x,p0.z)+1.75,p0.z,[p0.x,p0.z],MDX+MD_DX*5,MDZ+MD_DZ*5); }
 { const [deg,R]=PAD_MASTS[0], a=deg*Math.PI/180, x=Math.cos(a)*(R-0.42), z=Math.sin(a)*(R-0.42), gy=H(LZX+Math.cos(a)*R,LZZ+Math.sin(a)*R)-LZY;   // 0.55: the pad's lamp is its north-west mast (the old pole stood among the rover's crates)
-  LAMPS['Landing pad']=new THREE.Vector3(LZX+x,LZY+3.9-gy*0.3-0.35,LZZ+z); }
+  LAMPS['Landing pad']=new THREE.Vector3(LZX+x,LZY+3.9-gy*0.3-0.35,LZZ+z); }   // (0.56: now the south-west mast)
 lampAt('Nursery',NX,H(NX,NZ)+2.35,NZ,[NX,NZ],NX+1,NZ-2);
 lampAt('Reactor',RX+2.6,H(RX,RZ)+2.6,RZ+1.4,[RX+2.6,RZ+1.4],RX,RZ);
 // Ice mine: two floodlights on the rig. It sits on the slope into the crater, in shadow most of the day.
@@ -1554,14 +1579,14 @@ function capyLeg(D,key,x,z,front){ // hip > thigh > knee (ball, bellows) > shin 
   const hip=new THREE.Group(); hip.position.set(x,0.36,z);
   const sm=capyMat('legball'+key,()=>sstd(D.base,{roughness:D.matte?0.92:0.55,metalness:D.matte?0:0.1})), bm=capyMat('boot'+key,()=>sstd(D.dark,{roughness:D.matte?0.8:0.6,metalness:D.matte?0.05:0.2}));
   const sd=Math.sign(x);
-  hip.add(part(SPHs,sm,0.1,0.1,0.1,0,0,0,false));                                            // hip ball: no gap where the leg meets the body
+  const hb=part(SPHs,sm,0.1,0.1,0.1,0,0,0,false); hip.add(hb);                               // hip ball: no gap where the leg meets the body
   const th=new THREE.Mesh(geo('CylinderGeometry',0.095,0.085,0.18,14),fabric(D,key,legTex(D,key,'thigh',sd))); th.position.y=-0.09; th.castShadow=true; hip.add(th);
   const knee=new THREE.Group(); knee.position.y=-0.18; hip.add(knee);
-  knee.add(part(SPHs,sm,0.087,0.087,0.087,0,0,0,false));                                     // knee ball fills the joint when it bends
+  const kb=part(SPHs,sm,0.087,0.087,0.087,0,0,0,false); knee.add(kb);                         // knee ball fills the joint when it bends
   const bel=new THREE.Mesh(BELLOWS,bm); knee.add(bel);
   const sh=new THREE.Mesh(geo('CylinderGeometry',0.083,0.075,0.17,14),fabric(D,key,legTex(D,key,'shin',sd))); sh.position.y=-0.085; sh.castShadow=true; knee.add(sh);
   knee.add(part(SPHs,bm,0.115,0.075,0.13,0,-0.175,0.02,false));
-  hip.userData={knee,front}; return hip;
+  hip.userData={knee,front,det:[hb,kb,bel]}; return hip;   // det: hidden when the capybara is far from the camera (0.56)
 }
 const FACE_MATS=[];
 function faceLit(m){ m.emissiveIntensity=FACE_GLOW_DAY; FACE_MATS.push(m); return m; }
@@ -1581,12 +1606,13 @@ function makeCapy(color,divKey,isPup){
   // Life-support pack; divisions in white carry a white pack with accent side panels
   const packM=capyMat('pack'+key,()=>glow(sstd(D.pack,{roughness:0.5,metalness:0.15})));
   body.add(part(BOX,packM,0.34,0.22,0.3,0,0.95,-0.14));
-  if(!D.lamps){ const pm=capyMat('panel'+key,()=>glow(sstd(D.accent))); [1,-1].forEach(sd=>body.add(part(BOX,pm,0.012,0.16,0.24,sd*0.174,0.95,-0.14,false))); }
-  body.add(part(BOX,CM.lamp,0.075,0.075,0.03,0,0.97,-0.3,false));
+  const det=[], dt_=m=>{ det.push(m); return m; };   // 0.56: small parts hidden when the capybara is far from the camera (see capyLOD)
+  if(!D.lamps){ const pm=capyMat('panel'+key,()=>glow(sstd(D.accent))); [1,-1].forEach(sd=>body.add(dt_(part(BOX,pm,0.012,0.16,0.24,sd*0.174,0.95,-0.14,false)))); }
+  body.add(dt_(part(BOX,CM.lamp,0.075,0.075,0.03,0,0.97,-0.3,false)));
   // Chest control box under the neck ring; adults also have a tool arm folded beneath it
-  body.add(part(BOX,darkM,0.2,0.1,0.07,0,0.42,0.63,false));
-  body.add(part(BOX,capyMat('ledG',()=>sstd(0x2bd67b,{emissive:0x0f6b3a,emissiveIntensity:0.8})),0.03,0.02,0.01,0.05,0.44,0.667,false));
-  body.add(part(BOX,capyMat('ledA',()=>sstd(0xf2b04a,{emissive:0x7a4a10,emissiveIntensity:0.8})),0.03,0.02,0.01,-0.03,0.44,0.667,false));
+  body.add(dt_(part(BOX,darkM,0.2,0.1,0.07,0,0.42,0.63,false)));
+  body.add(dt_(part(BOX,capyMat('ledG',()=>sstd(0x2bd67b,{emissive:0x0f6b3a,emissiveIntensity:0.8})),0.03,0.02,0.01,0.05,0.44,0.667,false)));
+  body.add(dt_(part(BOX,capyMat('ledA',()=>sstd(0xf2b04a,{emissive:0x7a4a10,emissiveIntensity:0.8})),0.03,0.02,0.01,-0.03,0.44,0.667,false)));
   let arm=null;
   if(!isPup){
     arm={shoulder:new THREE.Vector3(0.1,0.37,0.62)};
@@ -1600,17 +1626,18 @@ function makeCapy(color,divKey,isPup){
   const cb=new THREE.Mesh(geo('CylinderGeometry',NECK_r,NECK_r+0.04,0.3,24),suitM); cb.rotation.x=Math.PI/2; cb.position.z=-0.15; cb.castShadow=true; neck.add(cb);
   const ringM=capyMat('ring'+key,()=>sstd(D.ring,{roughness:0.3,metalness:0.7}));
   const collar=new THREE.Mesh(geo('TorusGeometry',NECK_r+0.012,D.lamps?0.045:0.032,10,32),ringM); collar.castShadow=true; neck.add(collar);
-  const seal=new THREE.Mesh(geo('CircleGeometry',NECK_r+0.005,28),capyMat('seal'+key,()=>sstd(D.lamps?D.dark:0x3a3d40,{roughness:0.95,metalness:0}))); seal.position.z=0.004; neck.add(seal);
+  const seal=new THREE.Mesh(geo('CircleGeometry',NECK_r+0.005,28),capyMat('seal'+key,()=>sstd(D.lamps?D.dark:0x3a3d40,{roughness:0.95,metalness:0}))); seal.position.z=0.004; neck.add(seal); det.push(seal);
   const helmetM=helmetMat.clone();   // its own, so it can darken like welding glass
   const cap=capyMat('capGeo',()=>{ const g=new THREE.SphereGeometry(NECK_R,32,20,0,Math.PI*2,0,Math.acos(-NECK_d/NECK_R)); g.rotateX(Math.PI/2); return g; });
   const helmet=new THREE.Mesh(cap,helmetM); helmet.position.z=NECK_d; helmet.renderOrder=2; neck.add(helmet);
   const pods=[], visorParts=[];
   if(D.lamps){ [1,-1].forEach(sd=>{ const pod=new THREE.Group(); pod.position.set(sd*0.17,0.22,0.02); pod.rotation.x=-0.5; neck.add(pod); pods.push(pod);
-      pod.add(part(BOX,ringM,0.07,0.06,0.09,0,0,0,false)); const lens=new THREE.Mesh(geo('CylinderGeometry',0.022,0.022,0.012,14),capyMat('lens',()=>sstd(0xfff4d6,{emissive:0xfff0c8,emissiveIntensity:1.2}))); lens.rotation.x=Math.PI/2; lens.position.z=0.05; pod.add(lens); }); }
+      pod.add(part(BOX,ringM,0.07,0.06,0.09,0,0,0,false)); const lens=new THREE.Mesh(geo('CylinderGeometry',0.022,0.022,0.012,14),capyMat('lens',()=>sstd(0xfff4d6,{emissive:0xfff0c8,emissiveIntensity:1.2}))); lens.rotation.x=Math.PI/2; lens.position.z=0.05; pod.add(lens); det.push(lens); }); }
   neck.updateMatrixWorld(true); const hc=neck.localToWorld(new THREE.Vector3(0,0,NECK_d));
   // The head turns on a pivot at the helmet's centre, so it can look around without ever leaving the bubble
   const head=new THREE.Group(); head.position.copy(hc); body.add(head);
   const hg=headC(fur,ear); hg.position.set(0,-0.03,-0.07); head.add(hg);
+  const faceG=new THREE.Group(); hg.children.slice(1).forEach(m=>faceG.add(m)); hg.add(faceG);   // 0.56: the face (eyes, nose, ears, cheeks…) in one group, hidden far off
   if(D.visor){ // gold sun visor, lowered over the eyes and translucent; it rides on the head pivot, so it turns with the head
     const vg=capyMat('visorGeo',()=>new THREE.SphereGeometry(NECK_R*1.03,32,12,Math.PI*0.08,Math.PI*0.84,Math.PI*0.2,Math.PI*0.3));
     const v=new THREE.Mesh(vg,capyMat('visor',()=>new THREE.MeshStandardMaterial({color:new THREE.Color(0xe0a93c).convertSRGBToLinear(),metalness:0.55,roughness:0.12,transparent:true,opacity:0.5,depthWrite:false,side:THREE.DoubleSide})));
@@ -1620,7 +1647,7 @@ function makeCapy(color,divKey,isPup){
     const rim=new THREE.Mesh(rg,railM); rim.position.y=ry; head.add(rim); visorParts.push(rim);
     [0.08,0.92].forEach(fr=>{ const a=Math.PI*fr, kb=part(SPHs,railM,0.022,0.022,0.022,-Math.cos(a)*rr,ry,Math.sin(a)*rr,false); head.add(kb); visorParts.push(kb); }); }
   // Legs: hind legs stand on the ground; front legs ride with the body so it can rear up
-  const legs=[[0.22,0.32,1],[-0.22,0.32,1],[0.22,-0.32,0],[-0.22,-0.32,0]].map(([x,z,f])=>{ const l=capyLeg(D,key,x,z,!!f); (f?body:root).add(l); return l; });
+  const legs=[[0.22,0.32,1],[-0.22,0.32,1],[0.22,-0.32,0],[-0.22,-0.32,0]].map(([x,z,f])=>{ const l=capyLeg(D,key,x,z,!!f); (f?body:root).add(l); det.push(...l.userData.det); return l; });
   const hit=new THREE.Mesh(geo('SphereGeometry',0.9,12,8),new THREE.MeshBasicMaterial()); hit.visible=false; hit.position.y=0.6; root.add(hit);
   const carry=new THREE.Group(); carry.position.set(0,1.14,-0.14); body.add(carry);
   const carryParts={sample:part(BOX,M.rock,0.2,0.13,0.26,0,0,0),yuzu:part(SPH,M.citrus,0.13,0.13,0.13,0,0.05,0),peels:part(BOX,peelMat,0.26,0.07,0.22,0,0,0),compost:part(BOX,slatMat,0.24,0.18,0.24,0,0.03,0),crate:part(BOX,CRATE_M,0.34,0.26,0.34,0,0.07,0)};
@@ -1628,7 +1655,7 @@ function makeCapy(color,divKey,isPup){
   const headCitrus=part(SPH,M.citrus,0.1,0.1,0.1,0,0.3,0.06,false); headCitrus.visible=false; hg.add(headCitrus); addLeaf(headCitrus,1); addLeaf(carryParts.yuzu,1);
   scene.add(root);
   root.traverse(m=>{ if(m.isMesh) m.receiveShadow=false; });   // a capybara never takes shadows on itself: the low sun blacked out whole suits while the fur head stayed lit
-  return {root,body,head,neck,legs,hit,carryParts,headCitrus,carrying:null,face:hg.userData.face,arm,helmetM,helmet,pods,visorParts,div:key,rear:0,expr:'content'};
+  return {root,body,head,neck,legs,hit,carryParts,headCitrus,carrying:null,face:hg.userData.face,arm,helmetM,helmet,pods,visorParts,div:key,rear:0,expr:'content',lod:{det,face:faceG,far:false}};
 }
 
 const PLACES={
@@ -1638,7 +1665,7 @@ const PLACES={
   wheel:{x:WHX,z:WHZ,r:0,verb:'running the wheel',time:[25,40],single:true},   // 0.45: a proper run (was 6–10 s)
   mine:{x:2.9,z:-13.6,r:0.5,verb:'checking the ice mine',time:[4,7]},   // 0.49: beside the tank, on the bench
   comms:{x:CMX-1.2,z:CMZ+1.5,r:0,verb:'watching Earth',time:[9,14]},
-  array:{x:MAST_AT[0][0]+1.2,z:MAST_AT[0][1]-0.8,r:0.6,verb:'brushing dust off the array',time:[4,7]},
+  array:{x:MAST_AT[0][0]+1.7,z:MAST_AT[0][1]-1.25,r:0.5,verb:'brushing dust off the array',time:[4,7]},   // 0.56: a step further out, clear of the lander base
 };
 // Two seats side by side, facing Earth low on the horizon
 const EARTH_AZ=1.25, EARTH_DX=Math.cos(EARTH_AZ), EARTH_DZ=Math.sin(EARTH_AZ), EARTH_YAW=Math.atan2(EARTH_DX,EARTH_DZ);
@@ -2195,7 +2222,7 @@ function pupJob(c,P,k){
       J.x=mx+EARTH_DX*0.8-EARTH_DZ*(0.5+0.45*k); J.z=mz+EARTH_DZ*0.8+EARTH_DX*(0.5+0.45*k); J.face=EARTH_YAW; J.rear=((t*0.4+k*1.3)%5)<2.5; J.verb='watching Earth with '+P.name; break; }
     case 'survey': { const s=spotBy(P,1.2*sd,1.6); if(P.drill&&P.drill.visible) look(P.drill.position.x,P.drill.position.y+0.3,P.drill.position.z); at(s[0],s[1]); J.rear=true; J.verb='watching '+P.name+' drill a core'; break; }
     case 'mine': { look(MINE.x+1.9,H(MINE.x,MINE.z)+1.2,MINE.z+0.4); at(P.x+0.9*sd,P.z+0.6); J.rear=((t*0.6+k)%3)<1.5; J.verb='peering at the ice tank'; break; }
-    case 'array': { const a=t*1.6+k*Math.PI, R=1.2; J.x=P.x+Math.cos(a)*R; J.z=P.z+Math.sin(a)*R; J.run=true; J.verb='chasing dust round '+P.name; break; }
+    case 'array': { const a=t*1.6+k*Math.PI, R=0.9; J.x=P.x+Math.cos(a)*R; J.z=P.z+Math.sin(a)*R; J.run=true; J.verb='chasing dust round '+P.name; break; }   // 0.56: a tighter circle, off the lander base
     case 'habitat': { const s=spotBy(P,0.7*sd,0.3); J.x=s[0]; J.z=s[1]; J.face=P.yaw; J.curl=true; J.verb='napping next to '+P.name; break; }
     case 'padwatch': case 'unload': { const s=spotBy(P,0.9*sd,0.6); at(s[0],s[1]); if(lander.visible){ look(lander.position.x,lander.position.y+1.2,lander.position.z); J.rear=true; } J.verb=P.place==='unload'?'watching '+P.name+' unload':'watching the lander with '+P.name; break; }
     default: return null;
@@ -2263,12 +2290,40 @@ function stepYuzu(dt){
 // Small props don't cast shadows: each caster is another draw in the shadow pass
 [commsCon,ghCon,labMon.mesh.parent].forEach(o=>o.traverse(m=>{ if(m.isMesh) m.castShadow=false; }));
 incub.forEach(q=>q.bed.castShadow=false); gh.children.forEach(m=>{ if(m.geometry && m.geometry.parameters && m.geometry.parameters.radiusBottom===0.06) m.castShadow=false; });
+// 0.56: nor do the greenhouse's grass, fruit and fruit leaves (58 shadow draws); the trees still do
+gh.children.forEach(m=>{ if(m.material===M.grass) m.castShadow=false; }); ghFruit.forEach(f=>f.traverse(m=>{ if(m.isMesh) m.castShadow=false; }));
 // ---- 0.49: the dressing, moving. Called at the end of every sim step (so it runs at colony speed and stops on Pause).
 const labTube=lab.children.find(m=>m.geometry && m.geometry.parameters && m.geometry.parameters.radiusTop===0.16);
 let ghHistT=0, noteT=0, labFlashT=0, habTuckT=0;
 function nozzleWorld(i,out){ out.set(GH_NOZ[i],2.1,(Math.random()-0.5)*1.2); return gh.localToWorld(out); }
 const _dv=new THREE.Vector3();
+// 0.56: a hopper drone, after the small solar-winged hoppers in NASA's moon-base renderings. It parks at the east end of the
+// rim, and every minute or so hops down into the shadowed crater, sits there a while with its light blinking, and hops home.
+// It runs on colony time (Pause stops it) and costs one position a step.
+const HOP={home:[26,-6],spots:[[21,-19],[12,-23],[27,-17]],state:'home',t:25+rand2()*25,k:0,from:null,to:null,u:0};
+const hopper=new THREE.Group(); scene.add(hopper);
+{ const g=new THREE.Group(), v=(x,y,z)=>new THREE.Vector3(x,y,z); hopper.add(g);
+  g.add(mesh(new THREE.BoxGeometry(0.46,0.26,0.46),M.foil,0,0.44,0)); g.add(mesh(new THREE.BoxGeometry(0.5,0.04,0.5),M.hab,0,0.59,0));
+  [-1,1].forEach(sd=>{ const w=mesh(new THREE.BoxGeometry(0.56,0.02,0.36),M.panel,sd*0.52,0.6,0); w.rotation.z=sd*0.28; g.add(w); });
+  for(const [sx,sz] of [[1,1],[1,-1],[-1,1],[-1,-1]]){ g.add(rodY(v(sx*0.17,0.34,sz*0.17),v(sx*0.34,0.02,sz*0.34),0.018,M.steel,4)); g.add(mesh(new THREE.CylinderGeometry(0.05,0.06,0.02,8),M.steel,sx*0.34,0.01,sz*0.34)); }
+  g.add(mesh(new THREE.ConeGeometry(0.08,0.12,10,1,true),M.darkSteel,0,0.27,0).rotateX(Math.PI));
+  g.add(mesh(new THREE.SphereGeometry(0.07,10,6),M.darkSteel,0,0.46,0.24));
+  shadowAll(g); mergeGroup(g); }
+const hopLightM=std(0x300000,{emissive:0xff3030,emissiveIntensity:0}), hopLight=mesh(new THREE.SphereGeometry(0.035,6,4),hopLightM,0,0.64,0.15); hopper.add(hopLight);
+const hopFlame=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex('rgba(255,230,190,1)','rgba(255,140,60,0.35)'),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true})); hopFlame.visible=false; scene.add(hopFlame);
+hopper.position.set(HOP.home[0],H(HOP.home[0],HOP.home[1]),HOP.home[1]); hopper.rotation.y=-2.4;
+function updateHopper(dt){ const S=HOP;
+  if(S.state!=='hop'){ S.t-=dt; hopLightM.emissiveIntensity=S.state==='away' && (S.t*1.4)%1<0.18 ? 2.5 : 0;
+    if(S.t<=0){ S.back=S.state==='away'; S.from=S.back?S.to:S.home; S.to=S.back?S.home:S.spots[S.k++%S.spots.length]; S.state='hop'; S.u=0;
+      const d=Math.hypot(S.to[0]-S.from[0],S.to[1]-S.from[1]); S.dur=3.5+d*0.18; S.apex=4+d*0.45; S.y0=H(S.from[0],S.from[1]); S.y1=H(S.to[0],S.to[1]); S.yaw=Math.atan2(S.to[0]-S.from[0],S.to[1]-S.from[1]); }
+    return; }
+  // a burn off the ground, a ballistic arc, a burn to land
+  S.u=Math.min(1,S.u+dt/S.dur); const u=S.u, x=lerp(S.from[0],S.to[0],u), z=lerp(S.from[1],S.to[1],u), y=lerp(S.y0,S.y1,u)+S.apex*4*u*(1-u);
+  hopper.position.set(x,y,z); hopper.rotation.y+=angDiff(S.yaw,hopper.rotation.y)*Math.min(1,dt*3);
+  const burn=u<0.12||u>0.86; hopFlame.visible=burn; if(burn){ hopFlame.position.set(x,y-0.02,z); hopFlame.scale.setScalar(0.45+Math.random()*0.25); }
+  if(u>=1){ hopFlame.visible=false; if(S.back){ S.state='home'; S.t=50+Math.random()*40; } else { S.state='away'; S.t=18+Math.random()*12; } } }
 function updateDressing(dt){
+  updateHopper(dt);
   for(const k in stFx) if(stFx[k]>0) stFx[k]-=dt;
   const n=nightAmt;
   LAMP_HEAD.emissiveIntensity=0.55+1.8*n;
@@ -2424,10 +2479,10 @@ function ringAim(x,z,ly,a,d,h,eye,look){ const gy=H(x,z); look.set(x,gy+ly,z); e
 // it climbs), easing onto the pad as it comes down. Before, the shot only tilted up to 22 m while landers start at 70 m,
 // so most of the descent happened above the frame.
 function landerAim(eye,look,a,d,h,ly){
-  const gy=LZY, lp=lander.position, hh=Math.max(0,lp.y-LZY), w=smooth(3,14,hh);
+  const gy=LZY, lp=lander.position, hh=Math.max(0,lp.y-LZY);
   const dd=d+0.22*hh; eye.set(LZX+Math.cos(a)*dd, gy+h+0.14*hh, LZZ+Math.sin(a)*dd);
   const g=H(eye.x,eye.z)+0.8; if(eye.y<g) eye.y=g;
-  look.set(LZX,gy+ly,LZZ); _gp.set(lp.x,lp.y+1.5,lp.z); look.lerp(_gp,lander.visible?Math.max(w,0.35):0);   // 0.55: +1.5, the middle of the taller lander (was +1.0)
+  look.set(LZX,gy+ly,LZZ); if(lander.visible) look.set(lp.x,lp.y+1.5,lp.z);   // 0.56: aimed at the lander's middle the whole way down (it eased onto the pad below 14 m, and the higher camera cut off the lander's top)
   return lander.visible; }
 function gameCam(S,eye,look){
   switch(S.label){
@@ -2442,7 +2497,7 @@ function gameCam(S,eye,look){
     case 'Compost': return ringAim(CBX,CBZ,0.5,2.0,3.2,2.1,eye,look);
     case 'Wallow': { look.set(POOL.x,POOL.top+0.1,POOL.z); eye.set(POOL.x-EARTH_DX*3.8,POOL.top+1.9,POOL.z-EARTH_DZ*3.8); return true; }
     case 'Ice mine': return ringAim(MINE.x+0.6,MINE.z+0.3,1.5,0.45,6.2,2.6,eye,look);
-    case 'Landing pad': { if(lander.visible){ landerAim(eye,look,-0.35,6.5,4.2,0.8); return true; } return ringAim(LZX,LZZ,0.6,-0.35,6.5,4.2,eye,look); }
+    case 'Landing pad': { if(lander.visible){ landerAim(eye,look,-0.35,7,6.0,0.8); return true; } return ringAim(LZX,LZZ,0.6,-0.35,7,6.0,eye,look); }   // 0.56: higher (was 6.5 / 4.2)
     case 'Rover': { rover.updateMatrixWorld(); eye.copy(ROVER.sh); rover.localToWorld(eye); look.copy(ROVER.shLook); rover.localToWorld(look); return true; }
   }
   return false;
@@ -2537,7 +2592,7 @@ function landerDust(n,spread){ for(let k=0;k<n;k++){ const a=Math.random()*Math.
 function callCrowd(){ let n=0; for(const c of capys){ if(n>=3) break;
   if((c.state==='idle'||c.state==='walk') && !c.carrying && c.place!=='wheel' && c.place!=='padwatch' && !(nightOn && nightWatch.indexOf(c)<0)){
     c.forced='padwatch'; pickPlace(c); if(c.place==='padwatch') c.verb='hurrying to the landing pad'; n++; } } }
-const APPROACH_X=Math.cos(1.25), APPROACH_Z=Math.sin(1.25), LANDER_RUN=55;   // 0.54: landers come and go on Earth's side of the sky
+const APPROACH_X=Math.cos(1.25), APPROACH_Z=Math.sin(1.25);   // 0.54: landers leave on Earth's side of the sky (0.56: they land straight down)
 function updateLander(dt){
   const L=landerS;
   if(L.state==='idle'){
@@ -2550,11 +2605,10 @@ function updateLander(dt){
     return; }
   if(L.state==='descent'){
     L.t+=dt; const k=Math.min(1,L.t/22), h=70*Math.pow(1-k,2.2);   // falls fast, then brakes hard on the engine (0.47: 22 s, was 12)
-    // 0.54: it comes in from Earth's side of the sky on a slanting approach and only the last stretch is straight down
-    // (it used to drop vertically from 70 m, straight over the pad)
-    const off=LANDER_RUN*Math.pow(1-k,1.6), lx=LZX+APPROACH_X*off, lz=LZZ+APPROACH_Z*off;
-    lander.position.set(lx,LZY+h,lz); lander.rotation.set(-APPROACH_Z*0.35*(1-k),0.6,APPROACH_X*0.35*(1-k));   // leaning back into the braking burn
-    landerFlame.position.set(lx,LZY+h+0.3,lz); landerFlame.scale.setScalar(1.4+Math.random()*0.5+(h<4?1.0:0));
+    // 0.56: straight down over the pad and upright the whole way, turning slowly onto its landing heading: a controlled
+    // descent. (0.54 brought it in on a slant from Earth's side, leaning back; on the phone that read as an uncontrolled landing.)
+    lander.position.set(LZX,LZY+h,LZZ); lander.rotation.set(0,0.6+0.9*Math.pow(1-k,2),0);
+    landerFlame.position.set(LZX,LZY+h+0.3,LZZ); landerFlame.scale.setScalar(1.4+Math.random()*0.5+(h<4?1.0:0));
     if(h<5 && Math.random()<0.8) landerDust(2,2.4);
     if(k>=1){
       L.state='landed'; L.t=0; landerFlame.visible=false; shakeCam(0.08,0.6); lander.position.set(LZX,LZY,LZZ); lander.rotation.set(0,0.6,0);
@@ -3137,7 +3191,7 @@ const STATIONS=[
     status:()=>{ const w=SEATS.filter(q=>q.who && q.who.place==='comms' && q.who.state==='act').map(q=>q.who.name); return w.length ? names(w)+' watching Earth' : 'Nobody watching Earth right now'; }},
   {label:'Mass driver',kind:'station',x:MDX+MD_DX*5,z:MDZ+MD_DZ*5,d:10,h:4,ly:1.4,a0:-0.3,
     status:()=>colony.reactor<100 ? 'Waiting for the reactor' : colony.md<100 ? Math.floor(colony.md)+'% built'+(who('massdriver').length?' · '+names(who('massdriver'))+' at work':'') : (launch.phase>0?'Launching!':'He-3 '+colony.he3+'/3 · '+colony.launched+' sent home')},
-  {label:'Landing pad',kind:'station',x:LZX,z:LZZ,d:7,h:5.2,ly:1.2,a0:-0.35,ao:Math.PI-0.3,   // orbit opens from out west, the base behind the pad
+  {label:'Landing pad',kind:'station',x:LZX,z:LZZ,d:7.5,h:7.2,ly:1.0,a0:-0.35,ao:Math.PI-0.3,   // orbit opens from out west, the base behind the pad (0.56: higher, was d 7 h 5.2)
    status:landerStatus,   // from the base side, looking out at the pad
     },   // 0.54: follows a lander (see landerAim)
   {label:'Nursery',kind:'station',x:NX,z:NZ,d:6.6,h:2.5,ly:0.45,a0:1.87,   // 0.49: from downhill, the base behind it
@@ -3798,6 +3852,13 @@ function simStep(dt){
   wheelBase.visible = !(view==='pov' && following && following.place==='wheel' && following.state==='act');
   updateDressing(dt);   // 0.49
 }
+// 0.56: seen from far off (the top view, a wide orbit) a capybara is a few pixels tall, so its small parts (the face, hip and
+// knee balls, knee bellows, pack trim, chest box and lights, lamp lenses) are hidden: about 30 fewer draws each. With 9 adults
+// and 3 pups, 0.55's top view drew 1288 calls on the phone. Switches at 24 m going out and 21 m coming back, so nothing flickers.
+const LOD_FAR=24, LOD_NEAR=21;
+function capyLOD(){ const cp=camera.position;
+  for(const list of [capys,pups]) for(const c of list){ const L=c.lod; if(!L) continue; const r=c.root.position, dx=r.x-cp.x, dy=r.y-cp.y, dz=r.z-cp.z, d2=dx*dx+dy*dy+dz*dz;
+    const far=L.far ? d2>LOD_NEAR*LOD_NEAR : d2>LOD_FAR*LOD_FAR; if(far===L.far) continue; L.far=far; L.face.visible=!far; for(const m of L.det) m.visible=!far; } }
 function frame(){
   requestAnimationFrame(frame);
   const raw=clock.getDelta(), dt=Math.min(raw,0.05);
@@ -3936,6 +3997,7 @@ function frame(){
   if(view==='game'){ const fw=1000, fh=Math.round(1000/camera.aspect); camera.setViewOffset(fw,fh,fw*0.07,fh*0.09,fw,fh); gameOffset=true; }
   else if(gameOffset){ gameOffset=false; camera.clearViewOffset(); }
   // First person: the camera sits in the capybara's own helmet, so its head, helmet and neck ring are hidden for the frame.
+  capyLOD();
   const povSelf = view==='pov' && following && following.neck && !stationOn ? following : null;   // 0.50: not on a station camera (the wallow shot sits behind the bather, and hid its head)
   if(povSelf){ povSelf.neck.visible=false; povSelf.head.visible=false; }
   try{

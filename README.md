@@ -6,7 +6,7 @@ Lunabara (called Lunarium up to 0.33) grew out of the Astrobara V4 3D test scene
 
 - **Built by:** Mark Florentino LLC
 - **Built with:** Claude (credited here and on the store page, not in the game)
-- **Current build:** probe 0.55 (`index.html`)
+- **Current build:** probe 0.56 (`index.html`)
 
 ## How it runs
 
