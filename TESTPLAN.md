@@ -11,10 +11,11 @@
 | Lend a hand | `node assist.js <build>.html` | PASS: lending a hand speeds the reactor; PASS: pause stops the colony |
 | Collision | `node collide.js <build>.html` | PASS: bodies keep apart (under 0.25% of pair-frames), the wallow is entered by its ramps, nobody stuck, fewer than 1 sharp turn per walking minute |
 | Error log | `node errlog.js <build>.html` | PASS: error log keeps file, line and stack; outside "Script error." counted apart |
+| Clearances | `node props.js <build>.html` (0.55) | PASS: over 25 minutes with landers coming, nobody walks within 0.45 m of the pad's berm, 0.5 m of a light mast or 0.45 m of an uplink post |
 | Routes | `node navsim.js` with seeds 7, 11, 23, 99, 314 (20 simulated minutes, 7 capybaras, moving rover, some starting inside the greenhouse, by the airlock or on the landing pad) | Unfinished trips 0; overlap 0.00; greenhouse wall, habitat dome, pad, wallow side and bathhouse wall crossings 0 |
 | Renders | `python3 shots.py <build>.html out/` with a scenario for what changed | Screenshots show the change; the Diag has no errors other than blocked fonts |
 
-When a building or place is added, add it to the obstacle and place lists in `navsim.js` (0.49 added the comms console, `commsdesk`, and moved the mine and the peel-scooping spot). A place within an obstacle's radius + 0.55 m counts as inside it, and routes to it may cut through that building: keep new places clear (0.41's first stowing spot did this to the habitat).
+When a building or place is added, add it to the obstacle and place lists in `navsim.js` (0.49 added the comms console, `commsdesk`, and moved the mine and the peel-scooping spot; 0.55 added three `uplink` dishes). Props that aren't obstacles (the pad's berm and masts) go in `props.js` instead, which checks nobody walks through them. A place within an obstacle's radius + 0.55 m counts as inside it, and routes to it may cut through that building: keep new places clear (0.41's first stowing spot did this to the habitat).
 
 ## On device (iPhone)
 
@@ -76,6 +77,9 @@ Open the build, wait about 20 seconds, then tap the fps panel (top right) → **
 | D55 | Wheel and greetings | A runner's body and head bounce and sway with its stride; after a nuzzle, two capybaras step apart before dropping, never into each other |
 | D56 | Diag window | Opens on a tap of the fps panel; a tap on the view behind it closes it; in landscape Close is on screen |
 | D57 | Lander on camera | Stations → Landing pad (shoulder, POV and game, portrait and landscape): the lander is in frame from the moment it appears until touchdown and lift-off; it comes in on a slant from Earth's side; no capybara blocks the pad |
+| D58 | New structures (0.55) | Orbit round the base: the habitat reads as a quilted inflatable in a steel frame with a round-hatch airlock; the lab is a hex-panel drum with a honeycomb of seedling windows; the greenhouse has a honeycomb frame; the pad has a bag berm, four light masts and a marked deck; three spoke dishes on the comms pad face Earth; amber chevrons line ROVER-1's roads. No logos, flags or lettering anywhere. At night the habitat's portholes and the pad's lamp bars glow |
+| D59 | New lander and cost (0.55) | Diag → Test lander: the new lander (white hull, foil waist, four tanks, foil legs) stays in frame on the Landing pad camera and its hatch faces the base once down. Diag from the whole base in orbit and from the pad with a lander down: 55–60 fps; draw calls and triangles noted (headless: 734 calls / 278k and 404 / 191k) |
+| D60 | Habitat camera (0.55) | Stations → Habitat by day and at night: the room looks as before under its lower ceiling, nothing from outside shows through |
 | D34 | Crewmates kept | Close the app fully after a crewmate has arrived, reopen: the crewmate is still there (Diag `crew:` line) |
 | D10 | Progress kept | Close the app fully, reopen: "Colony restored" and the same reactor, samples, pups; Diag save line reads account on |
 | D21 | Reset | Diag → Reset colony twice: page reloads to a fresh colony; reopening doesn't bring the old one back |

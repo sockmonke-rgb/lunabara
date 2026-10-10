@@ -4,6 +4,39 @@ Lunabara was called Lunarium up to 0.33.
 
 Probe builds 0.1–0.6 were published as the "Astrobara V4 3D probe". Device results are from an iPhone (iOS 18.7, dpr 3) inside the Claude app.
 
+## 0.55: structures from the moon-base references
+Mark sent seven reference images of a planned lunar base (renders and a phase chart) and asked to bring some of its structures into Lunabara, with no logos or nations. Everything below is the colony's own kit: no agency, company or programme marks, no flags, no lettering.
+
+| From the references | In Lunabara |
+| --- | --- |
+| Inflatable habitats: quilted panels in a steel frame, round hatches | **The habitat** is now an inflatable. Quilted panels in two tiers between 16 steel ribs and three belts, a low quilted roof with a hub, six portholes (they glow at night, as the old windows did), and a quilted airlock tube ending in a round hatch with a porthole, handle and step. Same footprint. |
+| Hex-panel modules with hexagonal windows onto greenery | **The lab** is a drum of hexagonal panels with a rounded roof edge. A honeycomb of seven windows looks into a seedling bay under pink grow light, toward the Lab camera, and two dark glass hexes sit to the right of the bench. The bench, monitor, lamp and telescope stay where they were (the drum sits 30 cm further back than the old box). |
+| Hex-lattice glass tunnels | **The greenhouse** has a honeycomb frame over its glass instead of seven plain ribs, with heavier arches at the ends. |
+| A raised pad ringed with regolith bags and light masts | **The landing pad** has a sintered deck with panel seams, amber edge marks and a scorched middle; a berm of regolith bags (two courses, amber tabs) on the far side; and four light masts with red feet and lamp bars aimed in at the pad, which glow brighter at night. The side facing the base stays open for unloading, ROVER-1 and crewmates stepping off. The pad's lamp is now the north-west mast; the old pole stood among the rover's crates. The approach-light ring is unchanged. |
+| A cargo lander: faceted white hull, foil-wrapped bay, propellant tanks, splayed legs | **The supply lander** is rebuilt that way: an eight-sided white hull, a foil waist and thrust structure, four white tanks round the engine, foil legs with braces and footpads, two foil bottles on the hull, a solar deck and a small dish. The hatch and its cyan light face the base once it lands. It's about 0.7 m taller, so the pad cameras now aim 0.5 m higher on it. |
+| Spoke dishes on posts | **An uplink**: three open spoke dishes on posts on the east edge of the comms pad, all aimed at Earth. They carry the stream home. They're out of the Comms and Wallow shots. |
+| Painted lane chevrons | **ROVER-1's roads** (the ice loop and the cargo run to the pad) are lined with amber chevrons pointing the way it drives, tilted with the ground. One instanced draw, none inside a building, on the pad or in the bathhouse. |
+
+Not brought in: the launch tower and rocket, the printed regolith cone, the solar wings, the pressurised rover, the drones and a tunnel linking two modules. Any of them can follow.
+
+**Cost.** Every new structure is merged into one draw per material, and the habitat, lander and lab were merged too (they weren't before), so draw calls went down a little. Triangles went up. Headless counts at the same views (scene plus shadow pass), 0.54 → 0.55:
+
+| View | Draw calls | Triangles |
+| --- | --- | --- |
+| Whole base from above | 751 → 734 | 247k → 278k |
+| Habitat camera | 327 → 320 | 144k → 174k |
+| Wallow, shoulder | 323 → 316 | 147k → 166k |
+| Ice mine, orbit | 325 → 318 | 143k → 162k |
+| Pad with a lander down | 396 → 404 | 156k → 191k |
+
+No new lights and no per-frame work. The new materials (hex panels with a bump map, the pad deck, the chevrons) are on screen at load, so they compile behind the loading screen.
+
+**Routes.** The uplink dishes are obstacles (added to navsim); a first spot south of the tower trapped capybaras walking to the seats, so they moved to the pad's east edge, where nobody goes. The berm, masts and chevrons aren't obstacles. A new headless check, `props.js`, runs 25 minutes with landers coming in and fails if anyone walks within 0.45 m of the berm, 0.5 m of a mast or 0.45 m of an uplink post (closest: 0.96, 0.95 and 0.93 m).
+
+**Inside the habitat.** The inflatable's roof is lower than the old dome, so the room's walls are now 2 m tall with a lower ceiling under the quilted roof (lamp moved down to match). The night camera looks the same in renders.
+
+Checked here: all tests pass, including `props.js`; navsim gives the same trips as 0.54 on all five seeds. Renders (portrait) of each structure by day, the habitat and pad at night, the habitat camera by day and in night vision, the Comms, Wallow, Lab and Landing pad station cameras, and a test lander coming down and landing. Not verified on device: fps with the extra triangles, and how the quilting and hex panels read at phone size. Please send a Diag from the whole base in orbit and from the Landing pad with a lander down.
+
 ## 0.54
 On device (0.53): on the Landing pad camera the lander came down off screen; the shot showed only stars.
 - **The pad camera follows the lander all the way down.** The old shot tilted up to 22 m at most, but a lander starts its descent at 70 m, so most of the landing happened above the frame. The camera now aims at the lander while it's high, pulling back and up as it climbs, and eases onto the pad for touchdown. While tracking, it follows tightly instead of lagging behind. The same goes for the game view at the pad (GUIDE).

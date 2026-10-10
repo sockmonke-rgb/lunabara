@@ -8,7 +8,7 @@ fail=0
 echo "=== parse"
 node -e "const h=require('fs').readFileSync(process.argv[1],'utf8');const s=h.split('<script>').map(x=>x.split('</script>')[0]).find(x=>x.includes('const BUILD='));if(!s){console.log('FAIL: game script not found');process.exit(1)}try{new Function(s);console.log('PASS: script parses')}catch(e){console.log('FAIL: '+e.message);process.exit(1)}" "$BUILD" || fail=1
 
-for t in smoke restore reset assist collide errlog; do
+for t in smoke restore reset assist collide errlog props; do
   echo "=== $t"
   out=$(node "tools/$t.js" "$BUILD" 2>&1); code=$?
   echo "$out" | grep -E 'PASS|FAIL|errors:'

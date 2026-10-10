@@ -6,7 +6,7 @@ Lunabara (called Lunarium up to 0.33) grew out of the Astrobara V4 3D test scene
 
 - **Built by:** Mark Florentino LLC
 - **Built with:** Claude (credited here and on the store page, not in the game)
-- **Current build:** probe 0.54 (`index.html`)
+- **Current build:** probe 0.55 (`index.html`)
 
 ## How it runs
 
@@ -69,6 +69,8 @@ That parses the game script and runs every headless check below against `index.h
 | `tools/collide.js` | Checks capybaras and pups keep apart, use the wallow ramps and the bathhouse airlock, and nobody gets stuck on a trip (`node tools/collide.js index.html`) |
 | `tools/assist.js` | Checks lending a hand speeds the reactor and Pause stops the colony (`node tools/assist.js index.html`) |
 | `tools/errlog.js` | Checks the Diag error log keeps file, line and stack, and counts outside "Script error." lines apart (`node tools/errlog.js index.html`) |
+| `tools/props.js` | (0.55) Checks nobody walks through the landing pad's berm or light masts, or the uplink dishes, over 25 minutes with landers coming (`node tools/props.js index.html`) |
+| `tools/harness.js` | Loads a build headlessly with a hook into its internals; used by `props.js` |
 | `tools/shots.py` | Renders a build in headless Chromium with a scripted scenario and saves screenshots and the Diag (see WORKING-WITH-CLAUDE). Needs three.js r128's `three.min.js` and `OrbitControls.js` next to it; they're not committed |
 | `tools/scenario.json` | Example scenario for `shots.py`: a wave, a lander coming down, a crewmate stepping off |
 | `tools/test-all.sh` | What `npm test` runs |

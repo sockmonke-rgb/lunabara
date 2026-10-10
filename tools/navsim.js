@@ -7,6 +7,7 @@
 // 0.43: a spot to watch landings from, and a wider unloading spot.
 // and two capybaras that start on the pad, where crewmates from Earth step off the lander.
 // 0.43: the landing-watch spots, and ROVER-1's run out to the pad on every other loop.
+// 0.55: three uplink dishes beside the comms tower (obstacles). The pad's berm and light masts and the road chevrons are not obstacles.
 
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 // 0.51: the spread-out layout (same numbers as the game: HABX/GHX/PLX… there)
@@ -16,7 +17,8 @@ let seed=+(process.argv[2]||7); const rand=()=>{seed=(seed*16807)%2147483647; re
 const MD=[1.5,5,8.5].map(z=>({x:19.5+Math.cos(1.25)*z,z:-2.5+Math.sin(1.25)*z,r:1.1,place:'massdriver'}));
 const obstacles=[{x:HABX+0.8,z:HABZ,r:3.9,place:'habitat'},{x:GHX,z:GHZ,r:3.6,place:'greenhouse'},{x:PLX,z:PLZ,r:2.4,place:'wallow'},{x:PLX,z:PLZ,r:DOME_R,place:'bathhouse'},{x:WHX,z:WHZ,r:1.6,place:'wheel'},
 {x:-19.5,z:13.5,r:0.6,place:'array'},{x:19.5,z:-15,r:0.6,place:'array'},{x:-3,z:20.5,r:0.6,place:'array'},{x:CMX,z:CMZ,r:1.0,place:'comms'},{x:1.2,z:-15.2,r:1.3,place:'mine'},{x:LABX,z:LABZ,r:2.1,place:'lab'},{x:RX,z:RZ,r:2.5,place:'reactor'},{x:LSX,z:LSZ,r:1.3,place:'lifesupport'},{x:CBX,z:CBZ,r:0.95,place:'compost'}].concat(MD,[{x:NX,z:NZ,r:1.5,place:'nursery'},
-{x:LZX,z:LZZ,r:1.6,place:'pad'},{x:16.637,z:16.092,r:0.45,place:'commsdesk'}]);
+{x:LZX,z:LZZ,r:1.6,place:'pad'},{x:16.637,z:16.092,r:0.45,place:'commsdesk'},
+{x:18.7,z:13.9,r:0.5,place:'uplink'},{x:18.85,z:15.05,r:0.5,place:'uplink'},{x:18.5,z:16.2,r:0.5,place:'uplink'}]);   // 0.55: the uplink dishes beside the comms tower
 const roverOb={x:0,z:0,r:1.3,place:'rover'};
 const RP=[[0.6,1.2],[3,-4.5],[3.4,-11],[0.2,-13.4],[-0.4,-9],[0.3,-3]];
 const PADR=[[0.6,1.2],[-2.5,8.6],[-14,9.6],[-19.5,9.4],[LZX,LZZ+3.0]];   // 0.51: the cargo run goes north of the habitat
