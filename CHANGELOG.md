@@ -4,6 +4,27 @@ Lunabara was called Lunarium up to 0.33.
 
 Probe builds 0.1–0.6 were published as the "Astrobara V4 3D probe". Device results are from an iPhone (iOS 18.7, dpr 3) inside the Claude app.
 
+## 0.57: a clean lift-off, and pieces from the NASA images
+On device (0.56): top view 60 fps once running (the low of 30 and the 42 average in that Diag are the first 5 seconds after start-up), 876 draw calls (was 1288), 300k triangles. Landing pad 2 s after a test landing: 60 fps, 406 calls, sim 1.9 ms. On lift-off the lander vanished in the middle of the pad camera's shot. Mark also attached the NASA renderings that couldn't be reached from here in 0.56.
+
+**Lift-off**
+- **The pad cameras let it go.** They follow the lander up to 35 m, then ease back down onto the pad, so it leaves out of the top of the frame.
+- **It never vanishes in plain view.** It now climbs to 320 m before it's removed (it was 90 m, still clearly visible). From 140 m it shrinks to a speck, and its engine light fades out by 318 m.
+- **The descent mirrors it.** A lander now starts 320 m up as a faint light that grows into the craft (it used to pop in at 70 m, full size). It falls quickly to about 70 m, then follows the same braking descent as before, so a landing takes about 3 s longer to look the same at the end. The pad cameras pull back with it as far as they would for a 60 m lander.
+
+**From the NASA images.** No agency marks or lettering.
+- **ROVER-1 is the robotic logistics rover:** a grey lower body under a gold band that widens toward the top, a pale deck overhanging it, six open drum wheels on rocker-bogie arms, a folded robotic arm and a stereo camera mast at the back right, two whip antennas and a dark heater box at the back left. The deck top stays at 1.08 m, where pups ride, and the crates it hauls sit on the deck's front half. It's merged into one draw per material (the old rover was 11 separate parts).
+- **The solar arrays match the lander-mounted arrays:** an orange lattice mast, two blue blankets at the top under an orange cross-truss, and a white box base with blue cells on its sides, on four splayed legs with gold feet. The blankets are matte, so the low sun doesn't wash the blue out.
+- **Power cables** run along the ground from each array to what it feeds: the nursery, the mass driver's rail and the lab. They aren't obstacles; the capybaras step over them. One draw, no shadow.
+- **The nursery is a 3D-printed regolith shelter:** a bell of stacked layers (the thickest shielding on the base, for the pups), two pink-rimmed portholes over the incubators toward its camera, and a white door with a porthole, a pink frame and a lamp bar on the side facing the base. Same footprint.
+- Not brought in yet: the mobile habitat on wheels, the open crew buggy, the cylindrical core habitat, the robot dog, the path lights, the yellow ground power units and the relay satellites.
+
+**The pad's lamp masts** moved to 222° and 255° (were 238° and 272°). A capybara greeting at the landing crowd came within 0.35 m of the 272° mast in `props.js`; the closest is now 0.95 m. At the far right edge of the pad shoulder and game shots, as the camera drifts, the red foot of one mast can show.
+
+**Cost.** Headless, with a colony like Mark's: the top view is 685 draw calls (690 in 0.56) and 291k triangles (283k); the Landing pad is 363 calls (362). Sim time in the headless browser is noisy, but around a landing it's about the same as 0.56 for both builds. On the phone, the 1.9 ms in the Diag was the second of touchdown, when the crowd plans its routes to unload and the dust flies; fps held 60.
+
+Checked here: all tests pass, including `props.js` after the mast move. Renders: the descent's light at 275 m, the lander at 100 m, a lift-off at 13 m, the camera releasing it at 45 m and settling on the pad by 71 m and 111 m; a solar array (base, mast, blankets, by day and night); ROVER-1 from three sides, with a capybara beside it; a cable; the nursery's door side by day and night, and its station camera; the pad's shoulder, POV, game and orbit shots. Not verified on device: how the lift-off and the light at the start of a descent feel, and fps.
+
 ## 0.56: a straight landing, a clear pad shot, and pieces from NASA's renderings
 On device (0.55): top view 56.6 fps on average with a low of 29, worst frame 78 ms, 1288 draw calls and 391k triangles (9 adults, 3 pups). Landing pad with a lander down: 60 fps, 471 calls, 199k triangles. The lander came down at an angle, which read as an uncontrolled landing, and a pole stood in the middle of the pad camera's shot. Mark also sent NASA's moon-base renderings gallery.
 

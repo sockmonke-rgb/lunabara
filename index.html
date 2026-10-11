@@ -184,7 +184,7 @@
 <div id="top" class="bar">
   <div id="title" class="chip">
     <div class="name">LUNABARA</div>
-    <div class="sub">probe 0.56 · Shackleton rim</div>
+    <div class="sub">probe 0.57 · Shackleton rim</div>
     <div class="sub colony" id="colony">O2 -- · reactor -- · samples --</div>
     <div class="sub colony" id="colony2">yuzu -- · peels -- · compost --</div>
     <div class="sub colony" id="colony3">samples -- · He-3 -- · sent -- · pups --</div>
@@ -300,7 +300,7 @@ else if(!THREE.OrbitControls){ window.__lib='fallback: plain load (controls)'; d
 <script>
 (function(){
 'use strict';
-const BUILD='0.56';
+const BUILD='0.57';
 if(!window.THREE || !THREE.OrbitControls){
   document.getElementById('loadMsg').textContent='The 3D library did not load. Check the connection and reload.';
   return;
@@ -584,7 +584,7 @@ function mesh(geo,mat,x,y,z){ const m=new THREE.Mesh(geo,mat); m.position.set(x|
 const rand2=rng(55055);   // its own sequence, so the rocks and greenhouse keep their old places
 const LAMP_HEAD=std(0x2a2723,{emissive:0xffe2b8,emissiveIntensity:0.6,roughness:0.4});   // lamp fixtures (defined here since 0.55: the pad masts use it too)
 const PAD_AMBER=std(0xf0a030,{roughness:0.6,emissive:0x5a3408,emissiveIntensity:0.4});
-const PAD_MASTS=[[238,3.6],[272,3.7]];   // degrees from +x toward +z, and distance from the pad's middle: south-west and south, clear of every route
+const PAD_MASTS=[[222,3.6],[255,3.7]];   // degrees from +x toward +z, and distance from the pad's middle: west-south-west, clear of every route (0.57: further from the watching crowd, was 238° and 272°)
 // and (0.56) out of every pad camera's frame: the masts at 140° and 185° stood right behind the pad in the station shots
 const _up=new THREE.Vector3(0,1,0), _zf=new THREE.Vector3(0,0,1);
 function strut(a,b,w,mat,d){   // a thin box from point a to point b (THREE.Vector3s), in the parent's space
@@ -803,28 +803,53 @@ wheelSpin.position.y=WC; wheelBase.add(wheelSpin);
 at(wheelBase,WHX,WHZ); wheelBase.rotation.y=0.35; shadowAll(wheelBase); mergeGroup(wheelSpin); mergeGroup(wheelBase,wheelSpin.children.slice());   // 0.56: rims and spokes turn as one mesh per material
 obstacles.push({x:WHX,z:WHZ,r:1.6,place:'wheel'});
 
-// Solar masts (tall vertical arrays that turn to follow the low sun). 0.56: each stands on the small lander that delivered it,
-// after the lander-mounted vertical arrays in NASA's moon-base renderings: a foil-wrapped deck on four legs, a telescoping
-// mast, and two long blankets either side of it that turn to face the sun. Same places as before.
+// Solar masts (tall vertical arrays that turn to follow the low sun). Each stands on the small lander that delivered it, after
+// the lander-mounted vertical arrays in NASA's moon-base renderings (0.56; 0.57 matched to the actual image): a white box on
+// four splayed legs with blue cells on its sides, an orange lattice mast, and two blue blankets at the top under an orange
+// cross-truss, turning to face the sun. Same places as before. A cable runs from each to the building it feeds.
+const SOLAR_TEX=(function(){ const cv=document.createElement('canvas'); cv.width=64; cv.height=192; const x=cv.getContext('2d');
+  x.fillStyle='#14306e'; x.fillRect(0,0,64,192);
+  for(let r=0;r<6;r++) for(let j=0;j<4;j++) for(let i=0;i<4;i++){ const px=2+i*15, py=2+r*32+j*7.4; const g=x.createLinearGradient(px,py,px+13,py+6);
+    g.addColorStop(0,'#3f74f0'); g.addColorStop(1,'#1f4fcf'); x.fillStyle=g; x.fillRect(px,py,13.5,6.4); }
+  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; })();
+const SOLAR_M=new THREE.MeshStandardMaterial({color:0xffffff,map:SOLAR_TEX,emissive:0xffffff,emissiveMap:SOLAR_TEX,emissiveIntensity:0.18,roughness:0.62,metalness:0.05});   // matte enough that the low sun doesn't wash the blue out
+const TRUSS_TEX=(function(){ const cv=document.createElement('canvas'); cv.width=32; cv.height=64; const x=cv.getContext('2d');
+  x.clearRect(0,0,32,64); x.fillStyle='#d98a2b'; x.fillRect(0,0,5,64); x.fillRect(27,0,5,64); x.fillRect(0,0,32,4); x.fillRect(0,30,32,4);
+  x.strokeStyle='#d98a2b'; x.lineWidth=3.5; x.beginPath(); x.moveTo(4,2); x.lineTo(28,32); x.lineTo(4,62); x.stroke();
+  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.encoding=THREE.sRGBEncoding; return t; })();
+const TRUSS_M=new THREE.MeshStandardMaterial({color:0xffffff,map:TRUSS_TEX,alphaTest:0.5,side:THREE.DoubleSide,roughness:0.5,metalness:0.3,emissive:0x3a1c04,emissiveIntensity:0.5});
+function trussBox(w,L){ const g=new THREE.BoxGeometry(w,L,w), uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setY(i,uv.getY(i)*L/(w*1.6)); return g; }   // lattice along its length
 const masts=[];
 MAST_AT.forEach(([mx,mz])=>{
-  const g=new THREE.Group(), v=(x,y,z)=>new THREE.Vector3(x,y,z);
-  g.add(mesh(new THREE.CylinderGeometry(0.62,0.7,0.8,8),M.foil,0,0.78,0).rotateY(Math.PI/8));       // body, in foil
-  g.add(mesh(new THREE.CylinderGeometry(0.8,0.8,0.1,8),M.hab,0,1.23,0).rotateY(Math.PI/8));         // deck
-  g.add(mesh(new THREE.CylinderGeometry(0.2,0.32,0.3,10,1,true),M.darkSteel,0,0.25,0));               // its spent engine
-  for(let k=0;k<4;k++){ const a=k*Math.PI/2+Math.PI/4, c=Math.cos(a), sn=Math.sin(a);
-    g.add(rodY(v(c*0.6,1.0,sn*0.6),v(c*0.86,0.05,sn*0.86),0.04,M.steel,5)); g.add(mesh(new THREE.CylinderGeometry(0.12,0.14,0.04,8),M.steel,c*0.86,0.02,sn*0.86)); }
-  [[0.12,1.28,4.4],[0.09,4.4,7.6],[0.065,7.6,10.4]].forEach(([r,y0,y1])=>g.add(mesh(new THREE.CylinderGeometry(r,r,y1-y0,8),M.steel,0,(y0+y1)/2,0)));   // telescoping mast
-  const head=new THREE.Group(); head.position.y=7.0;
-  [-1,1].forEach(sd=>{ head.add(mesh(new THREE.BoxGeometry(1.1,6.0,0.05),M.panel,sd*0.66,0,0));
-    head.add(mesh(new THREE.BoxGeometry(1.16,0.06,0.09),M.foil,sd*0.66,3.02,0)); head.add(mesh(new THREE.BoxGeometry(1.16,0.06,0.09),M.foil,sd*0.66,-3.02,0));
-    head.add(mesh(new THREE.BoxGeometry(0.04,6.0,0.07),M.foil,sd*1.22,0,0)); });
-  head.add(mesh(new THREE.BoxGeometry(2.6,0.05,0.05),M.steel,0,3.15,0));   // spreader at the top
+  const g=new THREE.Group(), v=(x,y,z)=>new THREE.Vector3(x,y,z), B=1.4, BY=0.55, BH=0.72;
+  g.add(mesh(new THREE.BoxGeometry(B,BH,B),M.hab,0,BY+BH/2,0));                                                   // the lander's box
+  for(let f=0;f<4;f++){ const a=f*Math.PI/2; [-1,1].forEach(sd=>{ const p=mesh(new THREE.BoxGeometry(B*0.36,BH*0.86,0.03),SOLAR_M,0,BY+BH/2,0);   // blue cells on the outer thirds of each side
+      p.position.set(Math.sin(a)*(B/2+0.015)+Math.cos(a)*sd*B*0.31,BY+BH/2,Math.cos(a)*(B/2+0.015)-Math.sin(a)*sd*B*0.31); p.rotation.y=a; g.add(p); }); }
+  for(let k=0;k<4;k++){ const a=k*Math.PI/2+Math.PI/4, c=Math.cos(a), sn=Math.sin(a), foot=v(c*1.55,0.04,sn*1.55);   // splayed legs, gold feet
+    g.add(rodY(v(c*0.92,BY+0.35,sn*0.92),foot,0.035,M.steel,5)); g.add(rodY(v(c*0.75,BY,sn*0.75),foot,0.025,M.steel,5));
+    g.add(mesh(new THREE.CylinderGeometry(0.11,0.13,0.035,10),M.foil,foot.x,0.02,foot.z)); }
+  const MT=10.6, m0=BY+BH;
+  g.add(mesh(trussBox(0.2,MT-m0),TRUSS_M,0,(MT+m0)/2,0));                                                         // orange lattice mast
+  [m0+0.35,m0+0.85].forEach(y=>g.add(mesh(new THREE.CylinderGeometry(0.15,0.15,0.18,10),M.hab,0,y,0)));          // white collars at its foot
+  const head=new THREE.Group(); head.position.y=8.65;
+  [-1,1].forEach(sd=>{ head.add(mesh(new THREE.BoxGeometry(1.25,3.5,0.04),SOLAR_M,sd*0.76,0,0));                 // two blankets
+    head.add(mesh(new THREE.BoxGeometry(1.25,0.05,0.12),M.steel,sd*0.76,-1.78,0)); });                            // bottom bars
+  head.add(mesh(trussBox(0.18,3.1).rotateZ(Math.PI/2),TRUSS_M,0,1.85,0));                                         // orange cross-truss at the top
   g.add(head);
   at(g,mx,mz); shadowAll(g); mergeGroup(head); mergeGroup(g,head.children.slice());   // the turning head merges on its own
   masts.push(head);
   obstacles.push({x:mx,z:mz,r:1.0,place:'array'});   // 0.56: the lander base is wider than the old pole (was 0.6)
 });
+// 0.57: power cables on the ground from each array to what it feeds: the nursery, the mass driver's rail and the lab. Not
+// obstacles: they lie flat and the capybaras step over them. One draw, no shadow.
+{ const cab=new THREE.Group(), cm=std(0x5a2a20,{roughness:0.8});
+  [[[-18.35,14.1],[-16.6,15.4],[-15.0,15.9],[-13.76,16.78]],
+   [[19.45,-13.85],[19.9,-10.2],[19.1,-6.6],[19.5,-3.5]],
+   [[-2.35,19.5],[-1.3,17.9],[0.1,16.6],[0.95,15.04]]].forEach(P=>{
+    const c=new THREE.CatmullRomCurve3(P.map(([x,z])=>new THREE.Vector3(x,0,z))), n=Math.ceil(c.getLength()/0.3), pts=[];
+    for(let i=0;i<=n;i++){ const q=c.getPointAt(i/n); pts.push(new THREE.Vector3(q.x,H(q.x,q.z)+0.035,q.z)); }
+    cab.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),n*2,0.03,5,false),cm)); });
+  scene.add(cab); mergeGroup(cab); cab.traverse(m=>{ if(m.isMesh){ m.castShadow=false; m.receiveShadow=true; } }); }
 
 // Comms tower aimed at Earth
 const comms=new THREE.Group();
@@ -992,12 +1017,29 @@ function updateMassDriverLook(){
 
 // Nursery: a little dome where pups sleep
 const NX=-12.5, NZ=17.5;   // 0.51 (was -9, 12.5)
+// 0.57: a shelter printed from regolith, after the 3D-printed domes in NASA's renderings: a bell of stacked layers (the
+// thickest shielding on the base, for the pups), two round pink-lit portholes toward its camera, and a white door with a
+// porthole and a lamp over it on the side facing the base. Same footprint as the old dome.
+const PRINT_TEX=(function(){ const cv=document.createElement('canvas'); cv.width=8; cv.height=32; const x=cv.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,32); g.addColorStop(0,'#6f6c67'); g.addColorStop(0.3,'#a19d96'); g.addColorStop(0.62,'#8d8984'); g.addColorStop(1,'#5f5c58');
+  x.fillStyle=g; x.fillRect(0,0,8,32); const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.encoding=THREE.sRGBEncoding; return t; })();
 const nursery=new THREE.Group();
-nursery.add(mesh(new THREE.CylinderGeometry(1.3,1.35,0.7,16),M.hab,0,0.35,0));
-nursery.add(mesh(new THREE.SphereGeometry(1.3,16,8,0,Math.PI*2,0,Math.PI/2),M.hab,0,0.7,0));
-nursery.add(mesh(new THREE.CylinderGeometry(1.36,1.36,0.1,16),std(0xf3a6b8,{roughness:0.6}),0,0.72,0));
-{ const w=mesh(new THREE.BoxGeometry(0.4,0.26,0.08),std(0x2a1d10,{emissive:0xffc2d0,emissiveIntensity:0.6}),0,0.45,-1.33); nursery.add(w); }
-at(nursery,NX,NZ); nursery.rotation.y=2.85; shadowAll(nursery);   // 0.49: window toward its camera
+const NUR_R=1.45, NUR_H=2.05, nurR=y=>NUR_R*Math.pow(Math.max(0,1-Math.pow(y/NUR_H,2.6)),1/2.6);   // a bell: steep walls, rounded top
+{ const P=[]; for(let i=0;i<=40;i++){ const y=NUR_H*i/40; P.push(new THREE.Vector2(Math.max(0.001,nurR(y)),y)); }
+  const g=new THREE.LatheGeometry(P,40); const tex=PRINT_TEX.clone(); tex.needsUpdate=true; tex.repeat.set(1,26);
+  nursery.add(mesh(g,new THREE.MeshStandardMaterial({color:0xffffff,map:tex,bumpMap:tex,bumpScale:0.03,roughness:0.97,metalness:0}),0,0,0)); }
+{ const pinkM=std(0xf3a6b8,{roughness:0.6}), glowM=std(0x2a1d10,{emissive:0xffc2d0,emissiveIntensity:0.6}), v=(x,y,z)=>new THREE.Vector3(x,y,z);
+  // portholes toward the camera (local -z; the camera looks along the incubators at the dome)
+  [-0.42,0.42].forEach(a=>{ const y=1.05, r=nurR(y)+0.01, x=Math.sin(a)*r, z=-Math.cos(a)*r;
+    const w=mesh(new THREE.CylinderGeometry(0.16,0.16,0.06,16),glowM,x,y,z); w.lookAt(0,y,0); w.rotateX(Math.PI/2); nursery.add(w);
+    const rim=mesh(new THREE.TorusGeometry(0.18,0.035,5,18),pinkM,x*1.01,y,z*1.01); rim.lookAt(0,y,0); nursery.add(rim); });
+  // the door on the base side (local +z), leaning with the wall, a porthole, a pink frame and a lamp bar over it
+  const dz=nurR(0.5)-0.02, lean=Math.atan((nurR(0.05)-nurR(1.0))/0.95), door=new THREE.Group(); door.position.set(0,0,dz); door.rotation.x=-lean; nursery.add(door);
+  door.add(mesh(new THREE.BoxGeometry(0.66,1.0,0.1),pinkM,0,0.52,0.02)); door.add(mesh(new THREE.BoxGeometry(0.54,0.88,0.12),M.hab,0,0.5,0.03));
+  { const pw=mesh(new THREE.CylinderGeometry(0.09,0.09,0.04,14),glowM,0,0.74,0.1); pw.rotation.x=Math.PI/2; door.add(pw); }
+  door.add(mesh(new THREE.BoxGeometry(0.04,0.18,0.04),M.steel,0.18,0.48,0.11));
+  door.add(mesh(new THREE.BoxGeometry(0.42,0.06,0.12),LAMP_HEAD,0,1.1,0.1)); }
+at(nursery,NX,NZ); nursery.rotation.y=2.85; shadowAll(nursery); mergeGroup(nursery);   // 0.49: window toward its camera
 obstacles.push({x:NX,z:NZ,r:1.5,place:'nursery'});
 
 // 0.41: landing pad west of the reactor, where Earth's supply landers come down. Every 3 capsules sent earns one.
@@ -1387,18 +1429,41 @@ scatterRocks(160,34,190,0.6,3.2,false);
 
 // Rover on a loop between the habitat and the mine
 const rover=new THREE.Group();
-rover.add(mesh(new THREE.BoxGeometry(1.1,0.4,1.8),M.rover,0,0.55,0));
-rover.add(mesh(new THREE.BoxGeometry(0.9,0.35,0.7),M.foil,0,0.9,-0.3));
-rover.add(mesh(new THREE.CylinderGeometry(0.02,0.02,0.9,4),M.steel,0.35,1.3,-0.6));
-[-0.66,0,0.66].forEach(wz=>[-0.66,0.66].forEach(wx=>{ const w=mesh(new THREE.CylinderGeometry(0.26,0.26,0.18,10),M.tire,wx,0.26,wz); w.rotation.z=Math.PI/2; rover.add(w); }));
-[-0.58,0.58].forEach(wx=>{ const arm=mesh(new THREE.BoxGeometry(0.06,0.06,1.4),M.steel,wx,0.42,0); rover.add(arm); }); // rocker-bogie arms
-shadowAll(rover); scene.add(rover);
+// 0.57: rebuilt after the robotic logistics rover in NASA's renderings: a grey lower body under a gold band, a pale deck that
+// overhangs it (pups ride on it, crates sit on its front half), six drum wheels on rocker-bogie arms, a folded robotic arm and
+// a stereo camera mast at the back right, two whip antennas and a dark heater box at the back left. No markings.
+{ const v=(x,y,z)=>new THREE.Vector3(x,y,z), g=new THREE.Group();
+  const deckM=std(0xd9d7d1,{roughness:0.55,metalness:0.15}), bodyM=std(0x8e9196,{roughness:0.6,metalness:0.3});
+  const treadTex=stripTex(64,8,(x,w,h)=>{ x.fillStyle='#c9cbcd'; x.fillRect(0,0,w,h); x.fillStyle='#8a8d91'; for(let i=0;i<w;i+=8) x.fillRect(i,0,3,h); });
+  treadTex.repeat.set(3,1); const treadM=new THREE.MeshStandardMaterial({color:0xffffff,map:treadTex,roughness:0.5,metalness:0.35,side:THREE.DoubleSide});
+  g.add(mesh(new THREE.BoxGeometry(0.86,0.34,1.5),bodyM,0,0.5,0));                                               // lower body
+  { let band=new THREE.CylinderGeometry(0.764,0.61,0.27,4,1,false,Math.PI/4).toNonIndexed(); band.scale(1,1,1.57); band.computeVertexNormals(); g.add(mesh(band,M.foil,0,0.81,0)); }   // gold band, wider at the top, flat faces
+  g.add(mesh(new THREE.BoxGeometry(1.2,0.12,1.82),deckM,0,1.02,0));                                               // deck (top at 1.08: the pups' seat)
+  g.add(mesh(new THREE.BoxGeometry(1.22,0.025,1.84),M.steel,0,0.955,0));                                          // deck lip
+  [-1,1].forEach(sd=>{ [-0.66,0,0.66].forEach(wz=>{ const wx=sd*0.7;
+      const t=mesh(new THREE.CylinderGeometry(0.27,0.27,0.24,20,1,true),treadM,wx,0.27,wz); t.rotation.z=Math.PI/2; g.add(t);   // open drum wheel
+      const hub=mesh(new THREE.CylinderGeometry(0.11,0.11,0.26,10),M.darkSteel,wx,0.27,wz); hub.rotation.z=Math.PI/2; g.add(hub);
+      for(let k=0;k<5;k++){ const a=k/5*Math.PI*2; g.add(strut(v(wx,0.27,wz),v(wx,0.27+Math.sin(a)*0.25,wz+Math.cos(a)*0.25),0.03,M.steel)); } });
+    g.add(strut(v(sd*0.55,0.27,-0.66),v(sd*0.55,0.48,-0.15),0.06,M.steel)); g.add(strut(v(sd*0.55,0.48,-0.15),v(sd*0.55,0.27,0.66),0.06,M.steel));   // rocker
+    g.add(strut(v(sd*0.55,0.27,0),v(sd*0.55,0.48,-0.15),0.05,M.steel)); });                                         // bogie
+  // folded arm at the back right
+  const A=[v(0.42,1.08,-0.72),v(0.42,1.3,-0.72),v(0.42,1.62,-0.62),v(0.42,1.66,-0.22),v(0.42,1.56,0.02)];
+  for(let i=0;i<A.length-1;i++) g.add(rodY(A[i],A[i+1],i?0.045:0.07,deckM,8));
+  A.slice(1).forEach(p=>g.add(mesh(new THREE.SphereGeometry(0.065,10,6),M.steel,p.x,p.y,p.z)));
+  g.add(mesh(new THREE.BoxGeometry(0.08,0.06,0.2),M.steel,0.42,1.52,0.1)); g.add(mesh(new THREE.BoxGeometry(0.16,0.03,0.08),M.darkSteel,0.42,1.5,0.21));   // wrist and gripper
+  // stereo camera mast, antennas, heater box
+  g.add(rodY(v(0.18,1.08,-0.8),v(0.18,1.55,-0.8),0.035,deckM,8));
+  g.add(mesh(new THREE.BoxGeometry(0.26,0.08,0.08),deckM,0.18,1.6,-0.8)); [-1,1].forEach(sd=>g.add(mesh(new THREE.CylinderGeometry(0.03,0.03,0.04,10),M.darkSteel,0.18+sd*0.09,1.6,-0.755).rotateX(Math.PI/2)));
+  g.add(rodY(v(-0.48,1.08,-0.82),v(-0.48,1.85,-0.82),0.012,M.darkSteel,4)); g.add(rodY(v(-0.3,1.08,-0.84),v(-0.3,1.42,-0.84),0.01,M.darkSteel,4));
+  g.add(mesh(new THREE.BoxGeometry(0.36,0.14,0.22),M.darkSteel,-0.32,1.15,-0.62));
+  rover.add(g); }
+shadowAll(rover); scene.add(rover); mergeGroup(rover);
 const roverHit=new THREE.Mesh(new THREE.SphereGeometry(1.5,6,4),new THREE.MeshBasicMaterial()); roverHit.visible=false; roverHit.position.y=0.7; rover.add(roverHit);
 const ROVER={name:'ROVER-1',root:rover,verb:'hauling ice',tagY:1.9,focusY:0.8,eye:new THREE.Vector3(0,1.55,0.3),look:new THREE.Vector3(0,1.0,8),sh:new THREE.Vector3(1.0,2.6,-4.6),shLook:new THREE.Vector3(0,0.9,4)};
 roverHit.userData.subject=ROVER;
 const roverOb={x:0,z:0,r:1.3,place:'rover'};
 // 0.43: cargo on the roof during a run to the landing pad
-const roverCargo=[0,1,2].map(k=>{ const b=mesh(new THREE.BoxGeometry(0.34,0.26,0.34),CRATE_M,(k-1)*0.36,0.88,0.45); b.castShadow=true; b.visible=false; rover.add(b); return b; });
+const roverCargo=[0,1,2].map(k=>{ const b=mesh(new THREE.BoxGeometry(0.34,0.26,0.34),CRATE_M,(k-1)*0.36,1.21,0.45); b.castShadow=true; b.visible=false; rover.add(b); return b; });   // 0.57: on the new deck (top 1.08)
 const cargoPath=new THREE.CatmullRomCurve3(CARGO_PTS.map(([x,z])=>new THREE.Vector3(x,0,z)),false);
 const cargoLen=cargoPath.getLength();
 const cargo={on:false,u:0,dir:1,pause:0,load:0,runs:0};
@@ -2480,7 +2545,8 @@ function ringAim(x,z,ly,a,d,h,eye,look){ const gy=H(x,z); look.set(x,gy+ly,z); e
 // so most of the descent happened above the frame.
 function landerAim(eye,look,a,d,h,ly){
   const gy=LZY, lp=lander.position, hh=Math.max(0,lp.y-LZY);
-  const dd=d+0.22*hh; eye.set(LZX+Math.cos(a)*dd, gy+h+0.14*hh, LZZ+Math.sin(a)*dd);
+  if(landerS.state==='liftoff' && hh>35) return false;   // 0.57: let it go and settle back on the pad, so it leaves the top of the frame
+  const hc=Math.min(hh,60), dd=d+0.22*hc; eye.set(LZX+Math.cos(a)*dd, gy+h+0.14*hc, LZZ+Math.sin(a)*dd);   // pulls back with the lander, up to 60 m (0.57: it now starts 320 m up)
   const g=H(eye.x,eye.z)+0.8; if(eye.y<g) eye.y=g;
   look.set(LZX,gy+ly,LZZ); if(lander.visible) look.set(lp.x,lp.y+1.5,lp.z);   // 0.56: aimed at the lander's middle the whole way down (it eased onto the pad below 14 m, and the higher camera cut off the lander's top)
   return lander.visible; }
@@ -2497,7 +2563,7 @@ function gameCam(S,eye,look){
     case 'Compost': return ringAim(CBX,CBZ,0.5,2.0,3.2,2.1,eye,look);
     case 'Wallow': { look.set(POOL.x,POOL.top+0.1,POOL.z); eye.set(POOL.x-EARTH_DX*3.8,POOL.top+1.9,POOL.z-EARTH_DZ*3.8); return true; }
     case 'Ice mine': return ringAim(MINE.x+0.6,MINE.z+0.3,1.5,0.45,6.2,2.6,eye,look);
-    case 'Landing pad': { if(lander.visible){ landerAim(eye,look,-0.35,7,6.0,0.8); return true; } return ringAim(LZX,LZZ,0.6,-0.35,7,6.0,eye,look); }   // 0.56: higher (was 6.5 / 4.2)
+    case 'Landing pad': { if(lander.visible && landerAim(eye,look,-0.35,7,6.0,0.8)) return true; return ringAim(LZX,LZZ,0.6,-0.35,7,6.0,eye,look); }   // 0.56: higher (was 6.5 / 4.2)
     case 'Rover': { rover.updateMatrixWorld(); eye.copy(ROVER.sh); rover.localToWorld(eye); look.copy(ROVER.shLook); rover.localToWorld(look); return true; }
   }
   return false;
@@ -2593,6 +2659,10 @@ function callCrowd(){ let n=0; for(const c of capys){ if(n>=3) break;
   if((c.state==='idle'||c.state==='walk') && !c.carrying && c.place!=='wheel' && c.place!=='padwatch' && !(nightOn && nightWatch.indexOf(c)<0)){
     c.forced='padwatch'; pickPlace(c); if(c.place==='padwatch') c.verb='hurrying to the landing pad'; n++; } } }
 const APPROACH_X=Math.cos(1.25), APPROACH_Z=Math.sin(1.25);   // 0.54: landers leave on Earth's side of the sky (0.56: they land straight down)
+// 0.57: far off, the lander shrinks to a speck and its flame fades, so it never pops in or out while in view
+const LANDER_GONE=320, LANDER_FAR0=140, LANDER_FAR1=300;
+function landerFar(h){ const k=1-smooth(LANDER_FAR0,LANDER_FAR1,h); lander.scale.setScalar(Math.max(0.002,k));   // the craft shrinks from 140 m to 300 m
+  landerFlame.material.opacity=1-smooth(220,318,h); if(k<1) landerFlame.scale.multiplyScalar(0.45+0.55*k); }   // its engine light stays a little longer, then fades too
 function updateLander(dt){
   const L=landerS;
   if(L.state==='idle'){
@@ -2604,14 +2674,15 @@ function updateLander(dt){
       if(tourOn){ const i=STATIONS.findIndex(q=>q.label==='Landing pad'); if(i>=0){ goStation(i); tourT=0; } } }   // Tour cuts to the pad for the landing
     return; }
   if(L.state==='descent'){
-    L.t+=dt; const k=Math.min(1,L.t/22), h=70*Math.pow(1-k,2.2);   // falls fast, then brakes hard on the engine (0.47: 22 s, was 12)
+    L.t+=dt; const k=Math.min(1,L.t/22), h=70*Math.pow(1-k,2.2)+250*Math.pow(1-k,8);   // falls fast, then brakes hard on the engine (0.47: 22 s, was 12)
+    // 0.57: it starts 320 m up as a speck and grows as it comes down (it used to appear at 70 m, full size), see landerFar
     // 0.56: straight down over the pad and upright the whole way, turning slowly onto its landing heading: a controlled
     // descent. (0.54 brought it in on a slant from Earth's side, leaning back; on the phone that read as an uncontrolled landing.)
     lander.position.set(LZX,LZY+h,LZZ); lander.rotation.set(0,0.6+0.9*Math.pow(1-k,2),0);
-    landerFlame.position.set(LZX,LZY+h+0.3,LZZ); landerFlame.scale.setScalar(1.4+Math.random()*0.5+(h<4?1.0:0));
+    landerFlame.position.set(LZX,LZY+h+0.3,LZZ); landerFlame.scale.setScalar(1.4+Math.random()*0.5+(h<4?1.0:0)); landerFar(h);
     if(h<5 && Math.random()<0.8) landerDust(2,2.4);
     if(k>=1){
-      L.state='landed'; L.t=0; landerFlame.visible=false; shakeCam(0.08,0.6); lander.position.set(LZX,LZY,LZZ); lander.rotation.set(0,0.6,0);
+      L.state='landed'; L.t=0; landerFlame.visible=false; shakeCam(0.08,0.6); lander.position.set(LZX,LZY,LZZ); lander.rotation.set(0,0.6,0); landerFar(0);
       if((L.guide||0)>=5){ logMsg('Viewers guided a perfect landing'); capys.forEach(o=>cheer(o,60)); stream.burst+=300; } L.guide=0;
       L.roverCrates=3; cratesW.forEach(g=>g.visible=true); L.watchT=25;   // 0.43: three more for ROVER-1, and a crowd for the first 25 s
       if(L.test){ L.kinds=['yuzu','filters','seeds']; L.crates=3; crates.forEach(g=>g.visible=true); logMsg('Test lander touched down on the pad'); capys.forEach(o=>cheer(o,45)); return; }
@@ -2639,9 +2710,11 @@ function updateLander(dt){
   if(L.state==='liftoff'){
     L.t+=dt; const h=L.t*L.t*1.3, off=0.012*Math.pow(h,1.6);   // 0.54: straight up, then pitching over toward Earth
     lander.position.set(LZX+APPROACH_X*off,LZY+h,LZZ+APPROACH_Z*off); landerFlame.position.set(lander.position.x,LZY+h+0.3,lander.position.z);
-    lander.rotation.set(APPROACH_Z*Math.min(0.4,off*0.01),0.6,-APPROACH_X*Math.min(0.4,off*0.01)); landerFlame.scale.setScalar(1.8+Math.random()*0.6);
+    lander.rotation.set(APPROACH_Z*Math.min(0.4,off*0.01),0.6,-APPROACH_X*Math.min(0.4,off*0.01)); landerFlame.scale.setScalar(1.8+Math.random()*0.6); landerFar(h);
     if(L.t<1.6 && Math.random()<0.8) landerDust(2,2.8);
-    if(h>90){ L.state='idle'; L.cool=L.test?20:90; L.test=false; lander.visible=landerFlame.visible=false; }
+    // 0.57: it's gone only once it's a speck 320 m up (it used to vanish at 90 m, still plainly in view). The pad cameras let it
+    // go at 35 m and settle back on the pad, so it leaves the top of the frame (see landerAim).
+    if(h>LANDER_GONE){ L.state='idle'; L.cool=L.test?20:90; L.test=false; lander.visible=landerFlame.visible=false; landerFar(0); }
   }
 }
 function landerStatus(){
@@ -3936,7 +4009,7 @@ function frame(){
       for(const o of obstacles){ const ox=eyeW.x-o.x, oz=eyeW.z-o.z, od=Math.hypot(ox,oz), R=o.r+1.0; if(od<R && od>1e-3){ eyeW.x=o.x+ox/od*R; eyeW.z=o.z+oz/od*R; } }
       const g=H(eyeW.x,eyeW.z)+0.8; if(eyeW.y<g) eyeW.y=g;
       lookW.set(S.x,gy+S.ly,S.z);
-      if(S.label==='Landing pad' && lander.visible){ landerAim(eyeW,lookW,a,d,h,S.ly); tracking=true; }
+      if(S.label==='Landing pad' && lander.visible && landerAim(eyeW,lookW,a,d,h,S.ly)) tracking=true;
     }
     if(povInit){ smEye.copy(eyeW); smLook.copy(lookW); povInit=false; }
     smEye.lerp(eyeW,Math.min(1,dt*1.5)); smLook.lerp(lookW,Math.min(1,dt*(tracking?4:1.5)));   // a tracked lander is followed tightly
