@@ -14,6 +14,8 @@ Why: the bench sits 6 m down in the crater's shadow. Under the game's sunlight r
 
 Checked here: all tests pass. Renders compare 0.57 and 0.58 from the same views by day with the sun at 88°: the Ice mine station in orbit, shoulder and POV; from over the crater looking back at the base, as in the screenshot; from the base; the top view; and the station in orbit at night. In 0.58 the bench reads as a lit oval with the rig, tank and generator standing in it. Cost: one draw more; the mast is merged into the existing lamp fixtures. Not verified on device yet, including how bright it reads on the phone.
 
+On device (Diag from the Ice mine in orbit by day, with a lander in the last second of its descent): 60 fps (low 59, average 59.8), worst frame 38 ms, 535 draw calls, 231k triangles, sim 1.8 ms, 0 errors.
+
 ## 0.57: a clean lift-off, and pieces from the NASA images
 On device (0.56): top view 60 fps once running (the low of 30 and the 42 average in that Diag are the first 5 seconds after start-up), 876 draw calls (was 1288), 300k triangles. Landing pad 2 s after a test landing: 60 fps, 406 calls, sim 1.9 ms. On lift-off the lander vanished in the middle of the pad camera's shot. Mark also attached the NASA renderings that couldn't be reached from here in 0.56.
 
