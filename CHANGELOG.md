@@ -4,6 +4,16 @@ Lunabara was called Lunarium up to 0.33.
 
 Probe builds 0.1–0.6 were published as the "Astrobara V4 3D probe". Device results are from an iPhone (iOS 18.7, dpr 3) inside the Claude app.
 
+## 0.58: the ice mine, floodlit
+On device (0.57, screenshot from the Ice mine in orbit by day, sun at 88°): the mine looked poorly lit. Only the rig itself was faintly lit and the bench around it was black.
+
+Why: the bench sits 6 m down in the crater's shadow. Under the game's sunlight rule it's lit only about 17% of the day. Its one real light hung 3 m up at one corner of the rig, at the same strength as the other stations' lamps. Light falls off with the square of distance, so it barely reached the bench's edges.
+- **A flood mast on the rig.** A pole rises from the rig's top box to 5.3 m and carries a wide bar of three flood heads aimed over the bench. It's inside the rig's own footprint, so it isn't an obstacle.
+- **A stronger lamp that reaches further.** When the mine is on camera, the station lamp sits under the flood bar, over the middle of the bench. It's 2.8 times as bright as the other stations' lamps (14 by day in shadow, 25 at night, was 5 and 9) and reaches 20 m (12 elsewhere). It's still the one moving light, so there's no extra light cost.
+- **A pool of light on the bench.** A soft warm wash is laid on the ground over the whole bench, so the work area reads as lit from every camera, including the top view and other stations. It's strongest while the bench is in shadow or at night, and faint when the sun reaches it. It's a single draw: the ground gets the wash, but no real light.
+
+Checked here: all tests pass. Renders compare 0.57 and 0.58 from the same views by day with the sun at 88°: the Ice mine station in orbit, shoulder and POV; from over the crater looking back at the base, as in the screenshot; from the base; the top view; and the station in orbit at night. In 0.58 the bench reads as a lit oval with the rig, tank and generator standing in it. Cost: one draw more; the mast is merged into the existing lamp fixtures. Not verified on device yet, including how bright it reads on the phone.
+
 ## 0.57: a clean lift-off, and pieces from the NASA images
 On device (0.56): top view 60 fps once running (the low of 30 and the 42 average in that Diag are the first 5 seconds after start-up), 876 draw calls (was 1288), 300k triangles. Landing pad 2 s after a test landing: 60 fps, 406 calls, sim 1.9 ms. On lift-off the lander vanished in the middle of the pad camera's shot. Mark also attached the NASA renderings that couldn't be reached from here in 0.56.
 

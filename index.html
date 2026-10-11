@@ -184,7 +184,7 @@
 <div id="top" class="bar">
   <div id="title" class="chip">
     <div class="name">LUNABARA</div>
-    <div class="sub">probe 0.57 · Shackleton rim</div>
+    <div class="sub">probe 0.58 · Shackleton rim</div>
     <div class="sub colony" id="colony">O2 -- · reactor -- · samples --</div>
     <div class="sub colony" id="colony2">yuzu -- · peels -- · compost --</div>
     <div class="sub colony" id="colony3">samples -- · He-3 -- · sent -- · pups --</div>
@@ -300,7 +300,7 @@ else if(!THREE.OrbitControls){ window.__lib='fallback: plain load (controls)'; d
 <script>
 (function(){
 'use strict';
-const BUILD='0.57';
+const BUILD='0.58';
 if(!window.THREE || !THREE.OrbitControls){
   document.getElementById('loadMsg').textContent='The 3D library did not load. Check the connection and reload.';
   return;
@@ -901,6 +901,16 @@ obstacles.push({x:MINE.x,z:MINE.z,r:1.3,place:'mine'});
   const warm=mesh(new THREE.CircleGeometry(1.3,24),glowM,RX_,gy+0.04,RZ_); warm.rotation.x=-Math.PI/2; warm.renderOrder=2; scene.add(warm);
   const tx=MINE.x+1.9-0.72, tz=MINE.z+0.4, pts=[[RX_+0.2,RZ_+0.1],[RX_+0.8,RZ_+0.25],[tx-0.5,tz-0.45],[tx,tz]].map(([x,z])=>new THREE.Vector3(x,H(x,z)+0.03,z));
   const cab=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),20,0.022,5,false),M.darkSteel); cab.receiveShadow=true; scene.add(cab); }
+// 0.57: the flood light's pool on the bench. A soft warm wash laid on the ground (no real light), so the work area reads as lit
+// from any camera, by day in the crater's shadow and at night. The real lamp adds to it when the mine is on camera.
+const MINE_POOL=(function(){ const cv=document.createElement('canvas'); cv.width=128; cv.height=64; const x=cv.getContext('2d');
+  const g=x.createRadialGradient(64,32,2,64,32,64); g.addColorStop(0,'rgba(255,232,196,0.95)'); g.addColorStop(0.45,'rgba(255,226,186,0.55)'); g.addColorStop(0.8,'rgba(255,220,180,0.12)'); g.addColorStop(1,'rgba(255,220,180,0)');
+  x.fillStyle=g; x.fillRect(0,0,128,64); const tx=new THREE.CanvasTexture(cv); tx.encoding=THREE.sRGBEncoding;
+  const pg=new THREE.PlaneGeometry(9.6,4.6,32,16); pg.rotateX(-Math.PI/2); const cx=MINE_B.x+0.2, cz=MINE_B.z, p=pg.attributes.position;
+  for(let i=0;i<p.count;i++){ const wx=cx+p.getX(i), wz=cz+p.getZ(i); p.setXYZ(i,wx,H(wx,wz)+0.05,wz); } pg.computeBoundingSphere();
+  const m=new THREE.Mesh(pg,new THREE.MeshBasicMaterial({map:tx,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+  m.renderOrder=2; scene.add(m); return m; })();
+const mineLight={dark:1,t:0};   // how much the bench is out of the sun (0 lit, 1 in shadow), checked twice a second
 
 // Science lab with a sample bench and a small telescope
 const lab=new THREE.Group();
@@ -1173,7 +1183,9 @@ function fxK(label,sec){ const v=stFx[label]||0; return Math.min(1,v/(sec||1.2))
 // ---- Lamps: one fixture per station that has no light of its own. Heads glow always and brighter at night; the one real
 // light (stationLamp, below) moves to whichever station is on camera, so the night shots aren't black.
 const LAMPS={};   // label → world position of the lamp head
-const LAMP_K={Reactor:0.3,Greenhouse:0.5,Wallow:0.4,'Life support':0.7,Compost:0.7};   // stations with a glow of their own, or pale walls close to the lamp, get less
+const LAMP_K={Reactor:0.3,Greenhouse:0.5,Wallow:0.4,'Life support':0.7,Compost:0.7,'Ice mine':2.8};   // stations with a glow of their own, or pale walls close to the lamp, get less
+// (0.57) the ice mine gets more: its bench sits 6 m down in the crater's shadow for most of the day, and the light has to cover all of it
+const LAMP_D={'Ice mine':20};   // and reaches further (the lamp's range, metres; 12 elsewhere)
 const lampFix=new THREE.Group(); scene.add(lampFix);
 function lampAt(label,x,y,z,poleFrom,aimX,aimZ){   // head at (x,y,z) world; optional pole from a ground point
   if(poleFrom){ const [px,pz]=poleFrom, gy=H(px,pz), L=y-gy; const p=mesh(new THREE.CylinderGeometry(0.035,0.045,L,6),M.darkSteel,px,gy+L/2,pz); lampFix.add(p);
@@ -1194,6 +1206,13 @@ lampAt('Reactor',RX+2.6,H(RX,RZ)+2.6,RZ+1.4,[RX+2.6,RZ+1.4],RX,RZ);
 // Ice mine: two floodlights on the rig. It sits on the slope into the crater, in shadow most of the day.
 lampAt('Ice mine',MINE.x+0.6,H(MINE.x,MINE.z)+3.45,MINE.z+0.55,null,2.9,-13.6);
 { const f2=mesh(new THREE.BoxGeometry(0.26,0.12,0.2),LAMP_HEAD,MINE.x-0.6,H(MINE.x,MINE.z)+3.45,MINE.z+0.55); f2.lookAt(MINE.x+1.2,H(MINE.x,MINE.z),MINE.z+2); lampFix.add(f2); }
+// 0.57: a light mast on the rig, rising from its top box to 5.3 m, with a wide flood bar over the bench. The mine's real light sits
+// just under the bar, over the middle of the bench, instead of 3 m up at one corner of the rig. Inside the rig's own footprint.
+{ const gy=H(MINE.x,MINE.z), bx=MINE.x, bz=MINE.z+0.15, top=gy+5.3;
+  lampFix.add(mesh(new THREE.CylinderGeometry(0.045,0.06,top-(gy+3.35),6),M.darkSteel,bx,(top+gy+3.35)/2,bz));
+  lampFix.add(mesh(new THREE.BoxGeometry(1.5,0.06,0.06),M.darkSteel,bx,top,bz));
+  [-0.5,0,0.5].forEach(dx=>{ const h=mesh(new THREE.BoxGeometry(0.36,0.1,0.22),LAMP_HEAD,bx+dx,top-0.08,bz+0.12); h.lookAt(bx+dx*2.5,gy,bz+2.4); lampFix.add(h); });
+  LAMPS['Ice mine']=new THREE.Vector3(bx+0.2,top-0.45,bz+0.8); }
 LAMPS['Greenhouse']=new THREE.Vector3(GHX+3.6,H(GHX,GHZ)+2.6,GHZ-2.6);   // light only: the grow light is the fixture
 LAMPS['Wallow']=new THREE.Vector3(POOL.x,POOL.top+2.2,POOL.z);
 shadowAll(lampFix,false); mergeGroup(lampFix);
@@ -2389,6 +2408,9 @@ function updateHopper(dt){ const S=HOP;
   if(u>=1){ hopFlame.visible=false; if(S.back){ S.state='home'; S.t=50+Math.random()*40; } else { S.state='away'; S.t=18+Math.random()*12; } } }
 function updateDressing(dt){
   updateHopper(dt);
+  if((mineLight.t-=dt)<=0){ mineLight.t=0.5; mineLight.lit=litAt(MINE_B.x,H(MINE_B.x,MINE_B.z)+1.0,MINE_B.z,SUN.az,SUN.el) && !SUN.night; }
+  mineLight.dark+=((mineLight.lit?0:1)-mineLight.dark)*Math.min(1,dt*1.5);
+  MINE_POOL.material.opacity=0.12+0.5*Math.max(nightAmt,mineLight.dark);   // 0.57: the flood pool on the mine bench
   for(const k in stFx) if(stFx[k]>0) stFx[k]-=dt;
   const n=nightAmt;
   LAMP_HEAD.emissiveIntensity=0.55+1.8*n;
@@ -2454,6 +2476,7 @@ function placeLamp(n){
   stationLamp.visible=on; if(!on) return;
   if(pos) stationLamp.position.copy(pos);
   stationLamp.intensity=(n>0.02?9:5)*k;
+  stationLamp.distance=pos===LAMPS['Ice mine'] ? LAMP_D['Ice mine'] : 12;   // 0.57: the mine's lamp reaches the whole bench
 }
 // Screens: redrawn a few times a second while their station (or a capybara working there) is on camera
 const SCREEN_OF={lab:'Lab',comms:'Comms',greenhouse:'Greenhouse',lifesupport:'Life support'};
