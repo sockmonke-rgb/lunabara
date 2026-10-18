@@ -6,6 +6,27 @@ A separate artifact that tests co-op for the survival revamp (Raft-style, first 
 - **Source:** `net/lunabara-net-probe.html`, one file, currently 0.4. Each version is its own commit in this folder's history.
 - **Test:** `node net/coopsim.js net/lunabara-net-probe.html` (also part of `npm test`).
 
+## Working on it with your own Claude
+
+The net probe can only be played inside a claude.ai artifact, and an artifact belongs to one Claude account. There are two ways for a collaborator to work on it.
+
+**Your own copy (the usual way).** Your Claude publishes `net/lunabara-net-probe.html` from this repo as a new artifact in your account, called "Lunabara Net Probe". Things to know:
+- **Empty world.** Your copy starts with no pieces. Built pieces live in each artifact's own database, not in the file.
+- **Its own room.** Players on your link see each other, but not players on Mark's link.
+- **Playing together.** Share your artifact with the other person by email as an **Editor**. Building needs write access to the artifact's data, and an Editor has it only while the artifact isn't also shared by public link.
+
+**Mark's artifact.** Mark shares his net-probe artifact with you by email as an **Editor**. Your Claude can then publish new builds to his link, and everyone keeps one world and one room. Both Claudes are publishing to the same build, so the rules below matter even more.
+
+**Rules for every build, whoever makes it**
+1. Before starting, pull `main`. The newest build is `net/lunabara-net-probe.html`, and the newest entry under Changelog is its number.
+2. The new build is the next number (0.5 after 0.4, and so on). Bump `BUILD` in the file so the title chip and the first line of the Diag show it.
+3. Run `npm test` (it includes `coopsim.js`). Add or update checks in `coopsim.js` for what changed.
+4. Publish the artifact, then straight away commit the build and its Changelog entry to `main` together, in the same style as the entries below: what was asked, what changed, what was checked here, and what wasn't verified on device.
+5. Device results go in as their own entry ("Device results for net 0.5"), from pasted Diags.
+6. If someone else's build landed while you were working, pull it, carry your change onto it, and take the next number. Never publish an older file over a newer build.
+
+[WORKING-WITH-CLAUDE.md](../WORKING-WITH-CLAUDE.md) has the wider working rules for Lunabara (treat device reports as real, ship each change as a numbered probe, keep 60 fps on the phone).
+
 ## How to test
 1. Open the net probe link on the iPhone in the Claude app.
 2. Open the same link on a second device: another phone, an iPad, or a desktop browser. The same account in two places counts as two players; the Diag lists the other one as "your other tab". To play with someone else, share the artifact with them at Contributor level. A Viewer can move but can't ping or wave, and their Diag shows `blocked: echo,ping,pong,act`.
