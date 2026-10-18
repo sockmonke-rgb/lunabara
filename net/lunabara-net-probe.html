@@ -6,8 +6,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
   /* Layout: the 3D view fills the screen. Title and readout chips sit in the top corners inside the safe area;
-     the walk stick appears under the left thumb, the action pad sits under the right thumb, and in build mode
-     the piece picker sits just above the pad. Single dark look, like Lunabara. */
+     the walk stick appears under the left thumb, the action pad sits under the right thumb, the piece picker and
+     the Use button sit just above the pad, and the terminal panel docks at the bottom. Single dark look, like Lunabara. */
   :root{
     color-scheme: dark;
     --sky:#000000;
@@ -24,6 +24,7 @@
     --ok:#7fe0a0;
     --warn:#ff7a59;
     --warn-wash:rgba(255,122,89,0.18);
+    --track:rgba(255,255,255,0.08);
     --stick:rgba(236,230,218,0.35);
     --stick-knob:rgba(236,230,218,0.55);
     --stick-fill:rgba(14,14,16,0.25);
@@ -77,11 +78,13 @@
   .pad .big.on{background:var(--sun-wash);}
   .pad svg{width:22px;height:22px;}
   .pad small{font-size:9px;letter-spacing:.04em;}
-  #pieces{position:fixed;display:grid;grid-template-columns:repeat(3,56px);gap:6px;
+  #pieces{position:fixed;display:grid;grid-template-columns:repeat(4,62px);gap:6px;
           right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 184px);}
-  #pieces button{min-height:38px;padding:6px 2px;font-size:10px;border-radius:8px;}
+  #pieces button{min-height:38px;padding:6px 2px;font-size:10px;border-radius:8px;letter-spacing:.03em;}
   #pieces button[aria-pressed="true"]{border-color:var(--sun);color:var(--sun);background:var(--sun-wash);}
   #pieces button.del[aria-pressed="true"]{border-color:var(--warn);color:var(--warn);background:var(--warn-wash);}
+  #bUse{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 184px);
+        min-width:160px;border-radius:22px;border-color:var(--ice);color:var(--ice);}
   #cross{position:fixed;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:1.5px solid var(--text);
          box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none;}
 
@@ -94,7 +97,36 @@
        text-shadow:0 1px 3px #000,0 0 10px rgba(0,0,0,.8);}
   .tag .n{font-family:var(--pixel);font-size:12px;letter-spacing:.06em;color:var(--sun);}
   .tag .p{font-size:10px;color:var(--dim);font-variant-numeric:tabular-nums;}
-  .tag.stale .p{color:var(--warn);}
+  .tag.stale .n{color:var(--dim);} .tag.stale .p{color:var(--warn);}
+
+  /* the spectrometer panel docks at the bottom, over the pads */
+  #term{position:fixed;left:0;right:0;margin:0 auto;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);width:min(560px,calc(100% - 32px));box-sizing:border-box;z-index:6;
+        display:flex;flex-direction:column;gap:9px;padding:12px;background:var(--panel-solid);border:1px solid var(--line);border-radius:12px;}
+  #term .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  #term .hd b{font-family:var(--pixel);font-weight:400;font-size:13px;letter-spacing:.08em;color:var(--ice);}
+  #term .hd span{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;}
+  #term canvas{display:block;width:100%;height:112px;background:var(--well);border:1px solid var(--line);border-radius:8px;}
+  #term .bars{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;align-items:center;font-size:10px;color:var(--dim);letter-spacing:.04em;}
+  #term .bar{height:7px;border-radius:4px;background:var(--track);overflow:hidden;}
+  #term .bar i{display:block;height:100%;width:0;background:var(--ice);}
+  #term .bar.hold i{background:var(--ok);}
+  .knob{display:grid;grid-template-columns:118px minmax(0,1fr);align-items:center;gap:10px;font-size:11px;}
+  .knob label{color:var(--dim);line-height:1.3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .knob label b{display:block;color:var(--text);font-weight:600;letter-spacing:.05em;}
+  .knob input{width:100%;height:34px;margin:0;accent-color:var(--sun);touch-action:manipulation;}
+  .knob input:disabled{opacity:.5;}
+  #term .foot{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:var(--ice);}
+  #term .foot.done{color:var(--ok);}
+  #term .foot button{min-height:38px;padding:8px 14px;}
+  #term .knobs{display:grid;gap:4px;}
+  /* phones on their side: a shorter graph and the two dials side by side, so the panel stays clear of the title */
+  @media (max-height:500px){
+    #term{gap:6px;padding:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);}
+    #term canvas{height:64px;}
+    #term .knobs{grid-template-columns:1fr 1fr;gap:12px;}
+    .knob{grid-template-columns:96px minmax(0,1fr);gap:8px;}
+    .knob input{height:30px;}
+  }
 
   #diagShade{position:fixed;inset:0;z-index:8;background:rgba(0,0,0,.28);}
   #diag{position:fixed;left:16px;right:16px;top:50%;transform:translateY(-50%);max-width:560px;margin:auto;z-index:9;
@@ -105,7 +137,7 @@
   #diag .row{flex:none;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:var(--dim);}
   #diag .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   #diag button{min-height:36px;padding:8px 12px;}
-  #err{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 290px);font-size:11px;color:var(--warn);text-align:center;pointer-events:none;}
+  #err{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 300px);font-size:11px;color:var(--warn);text-align:center;pointer-events:none;}
   @media (prefers-reduced-motion: reduce){ #hint{transition:none;} }
 </style>
 
@@ -128,6 +160,7 @@
 <div id="buildInfo" hidden></div>
 <div id="cross" hidden></div>
 <div id="stick" hidden><i id="knob"></i></div>
+<button id="bUse" hidden>Use terminal</button>
 <div id="walkPad" class="pad">
   <button id="bView" class="sb" aria-label="Switch camera">1P</button>
   <button id="bBuild" class="sc" aria-label="Build">Build</button>
@@ -146,7 +179,18 @@
   <button data-k="2" aria-pressed="false">Rail</button>
   <button data-k="3" aria-pressed="false">Lamp</button>
   <button data-k="4" aria-pressed="false">Crate</button>
-  <button data-k="5" aria-pressed="false" class="del">Remove</button>
+  <button data-k="5" aria-pressed="false">Terminal</button>
+  <button data-k="6" aria-pressed="false" class="del">Remove</button>
+</div>
+<div id="term" role="dialog" aria-label="Spectrometer" hidden>
+  <div class="hd"><b>SPECTROMETER</b><span id="termCount">samples logged 0</span></div>
+  <canvas id="termCv" width="600" height="224" aria-label="Your signal against the target signal"></canvas>
+  <div class="bars"><span>MATCH</span><div class="bar"><i id="termMatch"></i></div><span>HOLD</span><div class="bar hold"><i id="termHold"></i></div></div>
+  <div class="knobs">
+    <div class="knob"><label for="kF"><b>FREQUENCY</b><span id="kFwho">you</span></label><input id="kF" type="range" min="0" max="1000" value="500"></div>
+    <div class="knob"><label for="kA"><b>AMPLITUDE</b><span id="kAwho">you</span></label><input id="kA" type="range" min="0" max="1000" value="500"></div>
+  </div>
+  <div class="foot" id="termFoot"><span id="termMsg">Match the dashed signal, then hold it.</span><button id="bLeave">Leave</button></div>
 </div>
 <div id="err" hidden></div>
 <div id="diagShade" hidden></div>
@@ -155,8 +199,8 @@
   <div class="row">
     <span id="diagMsg">Copy this and paste it back to Claude.</span>
     <span class="btns">
-      <button id="bRate">Send 15/s</button>
-      <button id="bSmooth">Smooth 120 ms</button>
+      <button id="bRate">Send 20/s</button>
+      <button id="bSmooth">Smooth auto</button>
       <button id="bCopy">Copy</button>
       <button id="bClose">Close</button>
     </span>
@@ -188,7 +232,7 @@ if(!window.THREE){ window.__lib='fallback: plain load'; document.write('<script 
 </script>
 <script>
 (function(){
-const BUILD='0.2';
+const BUILD='0.3';
 const $=id=>document.getElementById(id);
 $('buildLine').textContent='net probe '+BUILD+' · co-op test';
 const errs=window.__errs;
@@ -203,21 +247,21 @@ function angDiff(a,b){ let d=(b-a)%(Math.PI*2); if(d>Math.PI) d-=Math.PI*2; if(d
 function pct(a,p){ if(!a.length) return null; const s=a.slice().sort((x,y)=>x-y); return s[Math.min(s.length-1,Math.round(p*(s.length-1)))]; }
 function pushCap(a,v,n){ a.push(v); if(a.length>n) a.shift(); }
 const f0=v=>v==null?'--':String(Math.round(v));
+const finite=(v,lim)=>typeof v==='number' && isFinite(v) && Math.abs(v)<=lim;
 
 // ================================================================ net
 // Co-op over the artifact room. Each player's capybara rides in presence (absolute state, a fixed rate);
-// moments (wave, nuzzle, build) and the ping/echo probes go out as events. Everything received is checked before use.
+// moments (wave, nuzzle, build, terminal) and the ping/echo probes go out as events. Everything received is checked before use.
 const SUIT_N=4;
 const N={state:'starting', t0:Date.now(), useMs:null, room:null, user:null, canWrite:null,
   connected:false, everConnected:false, firstConn:null, downAt:null, drops:0, blips:0, downMs:0, ended:null,
   me:{peer:null,by:null,owner:null,canEdit:null,id:null,name:''},
   peers:new Map(), agents:0, guests:0, myTabs:0, deliveries:0,
-  sendHz:15, smooth:120, seq:0, lastSend:0, sentTimes:[], bytes:0, presOk:0, presErr:{},
+  sendHz:20, smooth:'auto', seq:0, lastSend:0, sentTimes:[], bytes:0, presOk:0, presErr:{},
   emitOk:0, emitErr:{}, emitBlocked:{}, emitSkipped:0,
   echo:{k:0,pend:new Map(),rtt:[],lost:0,sent:0,next:0},
   ping:{k:0,pend:new Map(),sent:0,next:0},
   acts:{sent:0,heard:0}, nz:{led:0,joined:0,why:'no mutual wave yet'}, onJoin:null, onLeave:null, onAct:null};
-const finite=(v,lim)=>typeof v==='number' && isFinite(v) && Math.abs(v)<=lim;
 const EXTRAP_MAX=250;
 
 function netStart(){
@@ -236,7 +280,7 @@ function netStart(){
 function attach(room){
   const term=e=>{ if(e && e.code && !N.ended){ N.ended=e.code; N.connected=false; } };
   room.onConnection(c=>{ const t=Date.now();
-    if(c){ if(N.firstConn==null) N.firstConn=t-N.t0;
+    if(c){ if(N.firstConn==null){ N.firstConn=t-N.t0; N.connAt=t; }
       if(N.downAt!=null && N.everConnected){ const d=t-N.downAt; N.downMs+=d; if(d>2000) N.drops++; else N.blips++; }
       N.downAt=null; N.connected=true; N.everConnected=true; }
     else { if(N.connected) N.downAt=t; N.connected=false; } }, term);
@@ -252,9 +296,11 @@ function attach(room){
   room.on('nuzzle',m=>{ if(m.sameTab) return; const d=m.data; if(!d || d.with!==N.me.peer) return;
     if(!finite(d.x,200)||!finite(d.z,200)||!finite(d.ux,1.01)||!finite(d.uz,1.01)) return;
     const L=Math.hypot(d.ux,d.uz); if(L<0.5) return;
-    if(me.act===2 || building) return;
+    if(me.act===2 || me.act===3 || building) return;
     N.nz.joined++; N.nz.why='joined '+(N.peers.get(m.peer)?displayName(N.peers.get(m.peer)):'a player'); startNuzzle(d.x,d.z,-d.ux/L,-d.uz/L); }, term);
   room.on('build',m=>{ if(m.sameTab) return; onBuildEvent(m.data); }, term);
+  room.on('term',m=>{ if(m.sameTab) return; const d=m.data; if(!d || d.op!=='solved' || !validId(d.id) || !finite(d.n,1e6) || (d.n|0)!==d.n) return;
+    TS.heard++; applySolved(d.id,d.n); }, term);
 }
 function emit(topic,data){
   if(!N.room || N.ended || N.emitBlocked[topic]) return false;
@@ -263,8 +309,9 @@ function emit(topic,data){
   return true;
 }
 function newRemote(p,t){ return {peer:p.peer, by:p.by, guest:!!p.guest, isMe:!!p.isMe, name:'', nameAt:0, nameBy:null, presObj:null,
-  buf:[], offs:[], off:0, late:[], gaps:[], recvs:[], rtt:[], lastSeq:null, lastRecv:0, n:0, skipped:0, tooLate:0, bad:0, joinedAt:t,
-  modes:{interp:0,extrap:0,hold:0,early:0,raw:0}, acts:0, pingSent:0, pingLost:0, pose:{x:0,z:0,h:0,y:0,m:0,a:0,ap:0}, sk:-1, fp:0,
+  buf:[], offs:[], off:0, late:[], gaps:[], recvs:[], ivs:[], rtt:[], lastSeq:null, lastRecv:0, n:0, skipped:0, tooLate:0, bad:0, joinedAt:t,
+  modes:{interp:0,extrap:0,hold:0,early:0,raw:0}, acts:0, pingSent:0, pingLost:0, pose:{x:0,z:0,h:0,y:0,m:0,a:0,ap:0,g:1}, sk:-1, fp:0,
+  D:120, Dt:120, Dat:0, ag:0, hid:0, away:false, superseded:false, live:false, hidden:true, tm:'', kf:-1, ka:-1,
   capy:null, tag:null, mode:'none', waveHeardAt:0, lastAp:0}; }
 function onPeers(ch){
   const t=Date.now(); N.deliveries++;
@@ -294,45 +341,55 @@ function ingest(R,p,t){
   const o=t-p.t; R.offs.push({o,at:t}); while(R.offs.length && R.offs[0].at<t-10000) R.offs.shift();
   let mn=Infinity; for(const q of R.offs) if(q.o<mn) mn=q.o; R.off=mn;
   const late=o-R.off; R.late.push({v:late,at:t}); while(R.late.length && R.late[0].at<t-10000) R.late.shift();
-  if(N.smooth>0 && late>N.smooth) R.tooLate++;
+  if(delayOf(R)>0 && late>delayOf(R)) R.tooLate++;
   if(R.lastRecv){ R.gaps.push({v:t-R.lastRecv,at:t}); while(R.gaps.length && R.gaps[0].at<t-10000) R.gaps.shift(); }
   R.lastRecv=t; R.recvs.push(t); while(R.recvs.length && R.recvs[0]<t-2000) R.recvs.shift();
   const s={t:p.t, x:p.x, z:p.z, h:finite(p.h,100)?Math.max(0,p.h):0, y:finite(p.y,100)?p.y:0, m:finite(p.m,50)?Math.max(0,p.m):0,
-    a:(p.a===1||p.a===2)?p.a:0, ap:finite(p.ap,60)?Math.max(0,p.ap):0};
-  R.sk=finite(p.sk,99)?((p.sk|0)%SUIT_N+SUIT_N)%SUIT_N:0; R.fp=p.fp?1:0;
+    a:(p.a===1||p.a===2||p.a===3)?p.a:0, ap:finite(p.ap,60)?Math.max(0,p.ap):0, g:p.g===0?0:1};
+  R.sk=finite(p.sk,99)&&p.sk>=0?((p.sk|0)%SUIT_N):-1; R.fp=p.fp?1:0; R.hid=p.hid===1?1:0; R.ag=finite(p.ag,1e7)?p.ag:0;
+  R.tm=validId(p.tm)?p.tm:''; R.kf=finite(p.kf,1)&&p.kf>=0?p.kf:-1; R.ka=finite(p.ka,1)&&p.ka>=0?p.ka:-1;
   const last=R.buf[R.buf.length-1];
-  if(last){ if(s.t<=last.t) return; if(Math.hypot(s.x-last.x,s.z-last.z)>8) R.buf.length=0; }
+  if(last){ if(s.t<=last.t) return; if(Math.hypot(s.x-last.x,s.z-last.z)>8) R.buf.length=0; else pushCap(R.ivs,s.t-last.t,30); }
   R.buf.push(s); if(R.buf.length>120) R.buf.shift();
 }
-// Where a remote capybara is drawn now: interpolated N.smooth ms behind its newest update, on its own clock.
+// 0.3: smoothing adapts per player. The buffer has to cover the gap between updates plus the network's jitter,
+// or the drawn capybara runs out of updates and has to guess ahead. Auto = median gap + jitter p95 + 12 ms.
+function delayOf(R){ return N.smooth==='auto'?R.D:N.smooth; }
+function adaptDelay(R,t,dt){
+  if(t-R.Dat>500){ R.Dat=t; const iv=pct(R.ivs,0.5), lp=pct(R.late.map(q=>q.v),0.95); if(iv!=null) R.Dt=clamp(iv+(lp||0)+12,40,300); }
+  R.D+=clamp(R.Dt-R.D,-dt*40,dt*40);   // eases 40 ms per second, so the drawn motion never jumps
+}
+// Where a remote capybara is drawn now: interpolated behind its newest update, on its own clock.
 function samplePose(R,t){
   const S=R.buf, P=R.pose; if(!S.length){ R.mode='none'; return null; }
-  const last=S[S.length-1];
-  const put=(a)=>{ P.x=a.x; P.z=a.z; P.h=a.h; P.y=a.y; P.m=a.m; P.a=a.a; P.ap=a.ap; };
-  if(N.smooth===0){ put(last); R.mode='raw'; R.modes.raw++; return P; }
-  const rt=t-R.off-N.smooth;
+  const last=S[S.length-1], D=delayOf(R);
+  const put=(a)=>{ P.x=a.x; P.z=a.z; P.h=a.h; P.y=a.y; P.m=a.m; P.a=a.a; P.ap=a.ap; P.g=a.g; };
+  if(D===0){ put(last); R.mode='raw'; R.modes.raw++; return P; }
+  const rt=t-R.off-D;
   while(S.length>2 && S[1].t<=rt) S.shift();
   if(rt<=S[0].t){ put(S[0]); R.mode='early'; R.modes.early++; return P; }
   if(S.length>=2 && rt<=last.t){
     let i=0; while(i<S.length-2 && S[i+1].t<rt) i++;
     const a=S[i], b=S[i+1], k=(rt-a.t)/Math.max(1,b.t-a.t);
     P.x=a.x+(b.x-a.x)*k; P.z=a.z+(b.z-a.z)*k; P.h=a.h+(b.h-a.h)*k; P.y=a.y+angDiff(a.y,b.y)*k; P.m=a.m+(b.m-a.m)*k;
-    P.a=b.a; P.ap=(a.a===b.a)?a.ap+(b.ap-a.ap)*k:b.ap;
+    P.a=b.a; P.ap=(a.a===b.a)?a.ap+(b.ap-a.ap)*k:b.ap; P.g=(a.g&&b.g)?1:0;
     R.mode='interp'; R.modes.interp++; return P;
   }
   const dx=Math.min(rt-last.t,EXTRAP_MAX);
   if(S.length>=2){ const pv=S[S.length-2], dt=Math.max(1,last.t-pv.t);
-    P.x=last.x+(last.x-pv.x)/dt*dx; P.z=last.z+(last.z-pv.z)/dt*dx; P.h=Math.max(0,last.h+(last.h-pv.h)/dt*dx); P.y=last.y; P.m=last.m;
+    P.x=last.x+(last.x-pv.x)/dt*dx; P.z=last.z+(last.z-pv.z)/dt*dx; P.h=Math.max(0,last.h+(last.g?0:(last.h-pv.h)/dt*dx)); P.y=last.y; P.m=last.m;
   } else { P.x=last.x; P.z=last.z; P.h=last.h; P.y=last.y; P.m=last.m; }
-  P.a=last.a; P.ap=last.a?last.ap+dx/1000:0;
+  P.a=last.a; P.ap=last.a?last.ap+dx/1000:0; P.g=last.g;
   if(rt-last.t<=EXTRAP_MAX){ R.mode='extrap'; R.modes.extrap++; } else { R.mode='hold'; R.modes.hold++; P.m=0; }
   return P;
 }
+function presObj(t){ return {v:1,s:N.seq,t,x:r2(me.x),z:r2(me.z),h:r2(me.ys),y:r3(me.yaw),m:r2(me.spd),sk:me.suitSet?me.suit:-1,fp:me.fp?1:0,
+  a:me.act,ap:r2(me.ap),g:me.gr?1:0,hid:0,ag:myAge(t),tm:me.tm||'',kf:TS.open&&TS.mineF?r3(TS.f):-1,ka:TS.open&&TS.mineA?r3(TS.a):-1}; }
 function netTick(t){
   if(!N.room || N.ended) return;
   if(t-N.lastSend>=1000/N.sendHz-2){
     N.lastSend=t; N.seq++;
-    const pres={v:1,s:N.seq,t,x:r2(me.x),z:r2(me.z),h:r2(me.baseS+me.h),y:r3(me.yaw),m:r2(me.spd),sk:me.suit,fp:me.fp?1:0,a:me.act,ap:r2(me.ap)};
+    const pres=presObj(t);
     N.room.presence(pres).then(()=>{ N.presOk++; }, e=>{ const c=(e&&e.code)||'error'; N.presErr[c]=(N.presErr[c]||0)+1; });
     N.sentTimes.push(t); while(N.sentTimes.length && N.sentTimes[0]<t-2000) N.sentTimes.shift();
     if(N.seq%30===1) N.bytes=JSON.stringify(pres).length;
@@ -340,12 +397,14 @@ function netTick(t){
   if(t>=N.echo.next){ N.echo.next=t+1000; const k=N.echo.k+1; N.echo.pend.set(k,t);
     if(emit('echo',{k})){ N.echo.k=k; N.echo.sent++; } else N.echo.pend.delete(k); }
   for(const [k,v] of N.echo.pend) if(t-v>5000){ N.echo.pend.delete(k); N.echo.lost++; }
-  if(t>=N.ping.next && N.peers.size){ N.ping.next=t+1000; const k=N.ping.k+1, expect=[...N.peers.keys()];
+  if(t>=N.ping.next && N.peers.size){ N.ping.next=t+1000; const k=N.ping.k+1, expect=[...N.peers.keys()].filter(id=>!N.peers.get(id).superseded);
     N.ping.pend.set(k,{t,expect,got:new Set()});
     if(emit('ping',{k})){ N.ping.k=k; N.ping.sent++; for(const id of expect){ const R=N.peers.get(id); if(R) R.pingSent++; } } else N.ping.pend.delete(k); }
   for(const [k,P] of N.ping.pend) if(t-P.t>5000){ N.ping.pend.delete(k); for(const id of P.expect) if(!P.got.has(id)){ const R=N.peers.get(id); if(R) R.pingLost++; } }
 }
-function bestPing(){ let best=null; for(const R of N.peers.values()){ const m=pct(R.rtt,0.5); if(m!=null && (best==null || m<best)) best=m; } return best; }
+// 0.3: a page that goes to the background says so at once, so others show it as away instead of frozen.
+function sendHidden(){ if(!N.room || N.ended) return; N.seq++; const p=presObj(Date.now()); p.hid=1; p.a=0; N.room.presence(p).catch(()=>{}); }
+function bestPing(){ let best=null; for(const R of N.peers.values()){ if(R.superseded) continue; const m=pct(R.rtt,0.5); if(m!=null && (best==null || m<best)) best=m; } return best; }
 
 // ================================================================ renderer and world
 const stage=$('stage');
@@ -386,8 +445,7 @@ const ground=new THREE.Mesh(gGeo,new THREE.MeshLambertMaterial({map:groundTex,ve
 scene.add(ground);
 
 const dummy=new THREE.Object3D();
-// 0.2: instanced meshes skip frustum culling. r128 culls them by the base shape at the origin, so in 0.1 the rocks
-// and craters all vanished whenever the meeting pad was out of view.
+// Instanced meshes skip frustum culling: r128 culls them by the base shape at the origin (fixed in 0.2).
 const craterTex=canvasTex(128,128,(x,w,h)=>{ const g=x.createRadialGradient(64,64,0,64,64,64);
   g.addColorStop(0,'rgba(30,28,26,0.42)'); g.addColorStop(0.62,'rgba(45,43,40,0.30)'); g.addColorStop(0.8,'rgba(215,210,200,0.32)');
   g.addColorStop(0.92,'rgba(120,116,110,0.12)'); g.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle=g; x.fillRect(0,0,w,h); });
@@ -424,10 +482,10 @@ earth.position.copy(new THREE.Vector3(-0.8,0.16,0.58).normalize().multiplyScalar
 
 // ================================================================ capybaras (compact version of the terrarium's head C in a division suit)
 const SUITS=[
-  {name:'Engineering',base:0x1e1f22,accent:0xf0a030,pack:0x2a2b2f,dark:0x141517,ring:0x1a1b1e,fur:0x8a5a3a,matte:true,bands:true},
-  {name:'Science',base:0xe9e9e4,accent:0x3f7fd6,pack:0xe4e4df,dark:0x8e9296,ring:0x8b9196,fur:0x9b6a44},
-  {name:'Operations',base:0xe9e9e4,accent:0x3aa35a,pack:0xe4e4df,dark:0x8e9296,ring:0x8b9196,fur:0x7a4e33},
-  {name:'Comms',base:0xe9e9e4,accent:0xe53b7a,pack:0xe4e4df,dark:0x8e9296,ring:0x8b9196,fur:0xa47550},
+  {name:'Engineering',base:0x1e1f22,accent:0xf0a030,pack:0x2a2b2f,dark:0x141517,ring:0x3a3c40,fur:0x8a5a3a,matte:true,bands:true},
+  {name:'Science',base:0xe9e9e4,accent:0x3f7fd6,pack:0xe4e4df,dark:0x8e9296,ring:0xa9aeb4,fur:0x9b6a44},
+  {name:'Operations',base:0xe9e9e4,accent:0x3aa35a,pack:0xe4e4df,dark:0x8e9296,ring:0xa9aeb4,fur:0x7a4e33},
+  {name:'Comms',base:0xe9e9e4,accent:0xe53b7a,pack:0xe4e4df,dark:0x8e9296,ring:0xa9aeb4,fur:0xa47550},
 ];
 const SPH=new THREE.SphereGeometry(1,16,12), BOX=new THREE.BoxGeometry(1,1,1);
 const TORSO_G=new THREE.SphereGeometry(1,28,18); TORSO_G.rotateX(Math.PI/2);   // poles at nose and tail, so stripes run along the body
@@ -458,7 +516,7 @@ function suitMats(i){ if(_sm[i]) return _sm[i]; const S=SUITS[i];
     accent:sstd(S.accent),
     pack:glow(sstd(S.pack,{roughness:0.5,metalness:0.15}),S.pack,0.08),
     dark:sstd(S.dark,{roughness:0.7,metalness:0.2}),
-    ring:sstd(S.ring,{roughness:0.3,metalness:0.7}),
+    ring:sstd(S.ring,{roughness:0.4,metalness:0.2}),   // 0.3: was metalness 0.7, which drew black with no reflections to show
     fur:new THREE.MeshStandardMaterial({color:S.fur,roughness:0.95,emissive:S.fur,emissiveIntensity:0.3}),
     ear:new THREE.MeshStandardMaterial({color:ear,roughness:0.9,emissive:ear,emissiveIntensity:0.3})}; }
 function part(geo,mat,sx,sy,sz,x,y,z,parent){ const m=new THREE.Mesh(geo,mat); m.scale.set(sx,sy,sz); m.position.set(x,y,z); parent.add(m); return m; }
@@ -494,7 +552,8 @@ function makeCapy(si){
 }
 function dropCapy(c){ if(c) scene.remove(c.root); }
 // Actions are posed from (action, seconds into it), which travel in presence, so every screen poses them the same.
-// Nuzzle: 0-0.9 walk to the mark, 0.9-1.5 rise, 1.5-3.3 helmets together with a head tilt, 3.3-3.9 drop, 3.9-4.5 step back.
+// 1 wave. 2 nuzzle: 0-0.9 walk to the mark, 0.9-1.5 rise, 1.5-3.3 helmets together with a head tilt, 3.3-3.9 drop, 3.9-4.5 step back.
+// 3 at a terminal: half up, front paws on the desk.
 const NO_ACT={rear:0,paw:0,front:0,tilt:0,look:0,blush:false};
 const _ap={rear:0,paw:0,front:0,tilt:0,look:0,blush:false};
 function actionPose(a,ap){
@@ -503,13 +562,15 @@ function actionPose(a,ap){
   if(a===2){ const e=ap<0.9?0:ap<1.5?(ap-0.9)/0.6:ap<3.3?1:ap<3.9?1-(ap-3.3)/0.6:0;
     const tl=(ap>1.5&&ap<3.3)?Math.sin(Math.min(1,(ap-1.5)/0.35)*Math.PI/2)*clamp((3.3-ap)/0.3,0,1):0;
     _ap.rear=smooth(e)*0.95; _ap.paw=0; _ap.front=smooth(e); _ap.tilt=0.3*tl; _ap.look=0.05*e; _ap.blush=ap>1.2&&ap<4.2; return _ap; }
+  if(a===3){ const e=smooth(ap/0.4); _ap.rear=0.42*e; _ap.paw=0; _ap.front=0.75*e; _ap.tilt=0.06*Math.sin(ap*1.3)*e; _ap.look=0.12*e; _ap.blush=false; return _ap; }
   return NO_ACT;
 }
-function poseCapy(c,dt,t,x,z,base,jumpH,yaw,spd,a,ap){
-  c.root.position.set(x,base,z); c.root.rotation.y=yaw;
-  const m=Math.min(1,spd/2.6), air=jumpH>0.04, A=actionPose(a,ap);
+// y: feet height. air: off the ground (legs tucked). shadowY: the surface under it.
+function poseCapy(c,dt,t,x,y,z,air,yaw,spd,a,ap,shadowY){
+  c.root.position.set(x,y,z); c.root.rotation.y=yaw;
+  const m=Math.min(1,spd/2.6), A=actionPose(a,ap);
   c.ph+=spd*dt*(Math.PI*2/0.95);          // a full stride per 0.95 m walked, so feet don't skate
-  c.lift.position.y=jumpH+(air?0:0.035*Math.abs(Math.sin(c.ph))*m);
+  c.lift.position.y=air?0:0.035*Math.abs(Math.sin(c.ph))*m;
   c.rear.rotation.x=-0.6*A.rear;
   for(let i=0;i<4;i++){ const l=c.legs[i], f=l.userData.front, off=(i===0||i===3)?0:Math.PI, s=Math.sin(c.ph+off);
     let hx,kx;
@@ -522,7 +583,7 @@ function poseCapy(c,dt,t,x,z,base,jumpH,yaw,spd,a,ap){
   c.head.rotation.x=air?-0.15:(A.look+0.04*Math.sin(c.ph*2)*m);
   c.head.rotation.z=A.tilt;
   c.blush[0].visible=c.blush[1].visible=A.blush;
-  const sc=1/(1+jumpH*0.7); c.shadow.scale.set(0.62*sc,1,0.95*sc);
+  const above=Math.max(0,y-shadowY), sc=1/(1+above*0.7); c.shadow.position.y=0.02-above; c.shadow.scale.set(0.62*sc,1,0.95*sc);
 }
 // Hearts over a nuzzle: a small pool of sprites that rise and fade
 const heartTex=canvasTex(64,64,(x)=>{ x.fillStyle='#e53b7a'; x.beginPath(); x.moveTo(32,54); x.bezierCurveTo(6,36,6,12,22,12); x.bezierCurveTo(28,12,32,18,32,22);
@@ -536,18 +597,20 @@ function updateHearts(dt){ for(const h of hearts){ if(h.t<0) continue; h.t+=dt; 
 function heartsFor(c,prev,ap,a){ if(a!==2) return; for(const k of [1.7,2.5]) if(prev<k && ap>=k) spawnHeart(c); }
 
 // ================================================================ building pieces
-// Pieces stand on the ground plane at any position, turned in 15° steps (24 per turn). Walls, rails, lamps and crates
-// set on a floor plate sit on it, 0.1 m up. The shared list lives in the artifact's database (collection "pieces");
+// Pieces are always level, turned in 15° steps (24 per turn). 0.3: they stack. Each piece has a height y (its bottom):
+// walls go on walls, floors go on top of walls (a roof) or beside other floors at any height, and anything else
+// sits on a floor or crate at any height. The shared list lives in the artifact's database (collection "pieces");
 // a "build" event carries each change so it shows on the other screen before the database delivers it.
-const STEP=Math.PI/12, FLOOR_H=0.1, REACH=6, MAX_PIECES=600;
+const STEP=Math.PI/12, REACH=7, MAX_PIECES=600;
 const KINDS=[
-  {name:'Floor',hx:1,hz:1,floor:true},
-  {name:'Wall',hx:1,hz:0.08,line:true},
-  {name:'Rail',hx:1,hz:0.05,line:true},
-  {name:'Lamp',hx:0.18,hz:0.18},
-  {name:'Crate',hx:0.4,hz:0.4},
+  {name:'Floor',hx:1,hz:1,h:0.1,floor:true,sup:true},
+  {name:'Wall',hx:1,hz:0.08,h:1.6,line:true,sup:true},
+  {name:'Rail',hx:1,hz:0.05,h:0.95,line:true},
+  {name:'Lamp',hx:0.18,hz:0.18,h:1.85},
+  {name:'Crate',hx:0.4,hz:0.4,h:0.8,sup:true,stack:true},
+  {name:'Terminal',hx:0.45,hz:0.32,h:1.25,term:true},
 ];
-const REMOVE=5;
+const REMOVE=KINDS.length;
 function mergeGeos(list){ const parts=list.map(g=>g.index?g.toNonIndexed():g), out=new THREE.BufferGeometry();
   for(const [name,size] of [['position',3],['normal',3],['uv',2]]){ let n=0; for(const g of parts) n+=g.attributes[name].array.length;
     const arr=new Float32Array(n); let o=0; for(const g of parts){ arr.set(g.attributes[name].array,o); o+=g.attributes[name].array.length; }
@@ -563,16 +626,26 @@ const wallTex=canvasTex(128,128,(x,w,h)=>{ x.fillStyle='#d9dad6'; x.fillRect(0,0
   x.strokeStyle='rgba(60,62,66,.45)'; x.lineWidth=2; x.strokeRect(1,1,w-2,h-2); x.beginPath(); x.moveTo(w/2,0); x.lineTo(w/2,h*0.8); x.stroke(); });
 const crateTex=canvasTex(128,128,(x,w,h)=>{ x.fillStyle='#c9a24a'; x.fillRect(0,0,w,h); x.strokeStyle='rgba(70,52,20,.7)'; x.lineWidth=6; x.strokeRect(3,3,w-6,h-6);
   x.lineWidth=4; x.beginPath(); x.moveTo(8,8); x.lineTo(w-8,h-8); x.stroke(); x.fillStyle='#2a2b2f'; x.fillRect(w*0.3,h*0.44,w*0.4,h*0.12); });
+const screenTex=canvasTex(128,96,(x,w,h)=>{ x.fillStyle='#071a2a'; x.fillRect(0,0,w,h); x.strokeStyle='rgba(127,212,230,.18)'; x.lineWidth=1;
+  for(let i=1;i<6;i++){ x.beginPath(); x.moveTo(i*w/6,0); x.lineTo(i*w/6,h); x.stroke(); } for(let i=1;i<4;i++){ x.beginPath(); x.moveTo(0,i*h/4); x.lineTo(w,i*h/4); x.stroke(); }
+  x.strokeStyle='#7fd4e6'; x.lineWidth=3; x.beginPath(); for(let i=0;i<=64;i++){ const u=i/64; const v=h/2-Math.sin(u*Math.PI*5)*h*0.28*Math.exp(-((u-0.5)**2)*3); i?x.lineTo(u*w,v):x.moveTo(u*w,v); } x.stroke();
+  x.fillStyle='#ffb347'; x.fillRect(6,6,22,6); });
 const lamb=(o)=>new THREE.MeshLambertMaterial(o);
-// Each kind: parts (one geometry and material each, drawn instanced, so 600 pieces still cost about 6 draws),
+const glowM=(c,o)=>{ const m=new THREE.MeshBasicMaterial(Object.assign({color:c},o||{})); m.color.convertSRGBToLinear(); return m; };
+// The terminal faces -z (toward whoever places it), its desk and screen tilted toward the user.
+const TILT=-0.35;
+// Each kind: parts (one geometry and material each, drawn instanced, so 600 pieces cost about eight draws),
 // and the merged shape the ghost preview uses.
 const PARTS=[
-  [{g:box(2,FLOOR_H,2,0,FLOOR_H/2,0),m:lamb({map:floorTex})}],
+  [{g:box(2,0.1,2,0,0.05,0),m:lamb({map:floorTex})}],
   [{g:box(1.99,1.6,0.16,0,0.8,0),m:lamb({map:wallTex})}],
   [{g:mergeGeos([box(0.07,0.9,0.07,-0.93,0.45,0),box(0.07,0.9,0.07,0.93,0.45,0),box(0.07,0.9,0.07,0,0.45,0),box(1.99,0.06,0.07,0,0.9,0),box(1.99,0.04,0.05,0,0.5,0)]),m:lamb({color:0xb8bcc2})}],
   [{g:mergeGeos([cyl(0.04,0.055,1.8,8,0,0.92,0),cyl(0.16,0.18,0.06,12,0,0.03,0),box(0.26,0.05,0.12,0,1.8,0.06)]),m:lamb({color:0x9aa0a6})},
-   {g:new THREE.SphereGeometry(0.1,12,8).translate(0,1.74,0.1),m:(()=>{ const m=new THREE.MeshBasicMaterial({color:0xffe2a8}); m.color.convertSRGBToLinear(); return m; })()}],
+   {g:new THREE.SphereGeometry(0.1,12,8).translate(0,1.74,0.1),m:glowM(0xffe2a8)}],
   [{g:box(0.8,0.8,0.8,0,0.4,0),m:lamb({map:crateTex})}],
+  [{g:mergeGeos([box(0.5,0.86,0.42,0,0.43,0.06),box(0.9,0.1,0.64,0,0,0).rotateX(TILT).translate(0,0.95,0),box(0.9,0.05,0.06,0,0.03,0.18)]),m:lamb({color:0xd9dad6})},
+   {g:box(0.8,0.02,0.52,0,0,0).rotateX(TILT).translate(0,1.012,-0.01),m:glowM(0xffffff,{map:screenTex,toneMapped:false})},
+   {g:box(0.92,0.035,0.035,0,0,0).rotateX(TILT).translate(0,0.888,-0.31),m:glowM(0x3f7fd6)}],
 ];
 const inst=PARTS.map(list=>list.map(pt=>{ const im=new THREE.InstancedMesh(pt.g,pt.m,MAX_PIECES); im.count=0; im.frustumCulled=false; scene.add(im); return im; }));
 const GHOST_G=PARTS.map(list=>list.length===1?list[0].g:mergeGeos(list.map(p=>p.g)));
@@ -580,15 +653,17 @@ const ghostOk=new THREE.MeshBasicMaterial({color:0x7fe0a0,transparent:true,opaci
 const ghostBad=new THREE.MeshBasicMaterial({color:0xff7a59,transparent:true,opacity:0.42,depthWrite:false});
 const ghost=new THREE.Mesh(GHOST_G[0],ghostOk); ghost.visible=false; ghost.renderOrder=3; scene.add(ghost);
 const B={db:null, dbState:'waiting', dbMs:null, snaps:0, cacheSnaps:0, pendingSnaps:0,
-  dbDocs:new Map(), evAdds:new Map(), tombs:new Map(), list:[], floors:[], dirty:true, lastPrune:0,
+  dbDocs:new Map(), evAdds:new Map(), tombs:new Map(), list:[], floors:[], dirty:true, lastPrune:0, legacy:0, termN:new Map(),
   placed:0, removed:0, writeOk:0, writeErr:{}, delOk:0, ack:[], evHeard:0, evFirst:0, dbFirst:0, dbAfterEv:[], dbSeen:new Map(), readOnly:false, bad:0,
-  sel:0, rot:0, ghost:{k:0,x:0,z:0,r:0,valid:false,snapped:false,reason:'',target:null}};
-function mkPiece(id,k,x,z,r,by){ const a=r*STEP, c=Math.cos(a), s=Math.sin(a);
-  return {id,k,x,z,r,by:by||null,exx:c,exz:-s,ezx:s,ezz:c,hx:KINDS[k].hx,hz:KINDS[k].hz,y:0}; }   // ex/ez: the piece's own x and z axes on the ground (three.js rotation.y)
+  sel:0, rot:0, ghost:{k:0,x:0,z:0,y:0,r:0,valid:false,snapped:false,reason:'',target:null,how:''}};
+function mkPiece(id,k,x,z,r,by,y){ const a=r*STEP, c=Math.cos(a), s=Math.sin(a), K=KINDS[k], yy=y==null?0:y;
+  return {id,k,x,z,r,by:by||null,exx:c,exz:-s,ezx:s,ezz:c,hx:K.hx,hz:K.hz,y:yy,top:yy+K.h,legacy:y==null}; }   // ex/ez: the piece's own x and z axes on the ground (three.js rotation.y)
 const validId=id=>typeof id==='string' && /^[A-Za-z0-9_-]{1,64}$/.test(id);
 function readPiece(id,d){ if(!validId(id) || !d) return null;
   const k=d.k, r=d.r; if(!(k>=0&&k<KINDS.length&&(k|0)===k) || !(r>=0&&r<24&&(r|0)===r) || !finite(d.x,150) || !finite(d.z,150)){ B.bad++; return null; }
-  return mkPiece(id,k,d.x,d.z,r,typeof d.by==='string'?d.by:null); }
+  if(d.y!=null && !(finite(d.y,60) && d.y>=0)){ B.bad++; return null; }
+  if(finite(d.n,1e6) && d.n>=0 && (d.n|0)===d.n && d.n>(B.termN.get(id)||0)) B.termN.set(id,d.n);
+  return mkPiece(id,k,d.x,d.z,r,typeof d.by==='string'?d.by:null,d.y==null?null:d.y); }
 function onSnap(snap){
   const t=Date.now(); B.snaps++; if(snap.metadata && snap.metadata.fromCache) B.cacheSnaps++; if(snap.metadata && snap.metadata.hasPendingWrites) B.pendingSnaps++;
   const next=new Map(); for(const doc of snap.docs){ const p=readPiece(doc.id,doc.data()); if(p) next.set(doc.id,p); }
@@ -614,17 +689,30 @@ function rebuildPieces(){
   for(const [id,p] of B.dbDocs) if(!B.tombs.has(id)) L.push(p);
   for(const [id,e] of B.evAdds) if(!B.tombs.has(id) && !B.dbDocs.has(id)) L.push(e.p);
   B.floors=L.filter(p=>KINDS[p.k].floor);
+  // pieces saved by 0.2 have no height: floors were on the ground, everything else on a ground floor or the ground
+  let legacy=0;
+  for(const p of L) if(p.legacy){ legacy++; let y=0;
+    if(!KINDS[p.k].floor) for(const f of B.floors) if(f.y<0.01 && inside(f,p.x,p.z,0)){ y=0.1; break; }
+    p.y=y; p.top=y+KINDS[p.k].h; }
+  B.legacy=legacy;
   const cnt=KINDS.map(()=>0);
-  for(const p of L){ p.y=KINDS[p.k].floor?0:baseAt(p.x,p.z); const i=cnt[p.k]++; if(i>=MAX_PIECES) continue;
+  for(const p of L){ const i=cnt[p.k]++; if(i>=MAX_PIECES) continue;
     dummy.position.set(p.x,p.y,p.z); dummy.rotation.set(0,p.r*STEP,0); dummy.scale.set(1,1,1); dummy.updateMatrix();
     for(const im of inst[p.k]) im.setMatrixAt(i,dummy.matrix); }
   inst.forEach((list,k)=>list.forEach(im=>{ im.count=Math.min(cnt[k],MAX_PIECES); im.instanceMatrix.needsUpdate=true; }));
   B.dirty=false;
+  if(TS.open && !L.some(p=>p.id===TS.id)) closeTerminal('The terminal was removed.');
 }
 function inside(p,x,z,m){ const dx=x-p.x, dz=z-p.z; return Math.abs(dx*p.exx+dz*p.exz)<=p.hx+m && Math.abs(dx*p.ezx+dz*p.ezz)<=p.hz+m; }
-function baseAt(x,z){ for(const f of B.floors) if(inside(f,x,z,0)) return FLOOR_H; return 0; }
-// Footprint overlap (separating axes). Floors only clash with floors, everything else with everything else.
-// Walls and rails are shortened 16 cm at each end for the test, so two meeting at a floor's corner fit.
+const levelEq=(a,b)=>Math.abs(a-b)<0.03;
+// The highest surface (floor, crate or wall top) under x,z that is no higher than maxTop; the ground is 0.
+function supportAt(x,z,maxTop){ let s=0; for(const p of B.list){ if(!KINDS[p.k].sup || p.top>maxTop || p.top<=s) continue;
+  if(Math.abs(p.x-x)>1.5 || Math.abs(p.z-z)>1.5) continue; if(inside(p,x,z,0.05)) s=p.top; } return s; }
+// The lowest raised floor above someone whose feet were at y: it stops a jump from below.
+function ceilingAt(x,z,y){ let c=Infinity; for(const p of B.floors){ if(p.y<=y+0.3 || p.y>=c) continue;
+  if(Math.abs(p.x-x)>1.5 || Math.abs(p.z-z)>1.5) continue; if(inside(p,x,z,0.05)) c=p.y; } return c; }
+// Footprint overlap (separating axes). Floors only clash with floors, everything else with everything else, and only
+// where their heights overlap. Walls and rails are shortened 16 cm at each end for the test, so two meet at a corner.
 function shrink(k){ const K=KINDS[k]; return [K.hx-(K.line?0.16:0.02), K.hz-0.02]; }
 function overlaps(a,b){ const [ahx,ahz]=shrink(a.k), [bhx,bhz]=shrink(b.k), dx=b.x-a.x, dz=b.z-a.z;
   for(const [ux,uz] of [[a.exx,a.exz],[a.ezx,a.ezz],[b.exx,b.exz],[b.ezx,b.ezz]]){
@@ -633,42 +721,106 @@ function overlaps(a,b){ const [ahx,ahz]=shrink(a.k), [bhx,bhz]=shrink(b.k), dx=b
     if(Math.abs(dx*ux+dz*uz)>=ra+rb) return false; }
   return true; }
 function clashes(g){ const fl=!!KINDS[g.k].floor; for(const p of B.list){ if(!!KINDS[p.k].floor!==fl) continue;
-  if(Math.abs(p.x-g.x)>3 || Math.abs(p.z-g.z)>3) continue; if(overlaps(g,p)) return true; } return false; }
-// Snapping: a piece within 0.6 m of a neighbour's slot, and turned within one step (15°) of it, clicks into that slot.
+  if(Math.abs(p.x-g.x)>3 || Math.abs(p.z-g.z)>3) continue; if(Math.min(g.top,p.top)-Math.max(g.y,p.y)<=0.02) continue; if(overlaps(g,p)) return true; } return false; }
+function supportedAt(x,z,L){ if(L<0.03) return true; for(const p of B.list){ if(!(KINDS[p.k].floor||KINDS[p.k].stack) || !levelEq(p.top,L)) continue; if(inside(p,x,z,0.02)) return true; } return false; }
+// Snapping: a piece within 0.6 m of a neighbour's slot at the same height, turned within one step (15°) of it, clicks into that slot.
 function nearestRot(cr,r,period){ let best=null, bd=99; for(let m=0;m<24;m+=period){ const c=(cr+m)%24, d=Math.min((c-r+24)%24,(r-c+24)%24); if(d<bd){ bd=d; best=c; } } return bd<=1?best:null; }
-function snapSlots(k,p){ const K=KINDS[k], P=KINDS[p.k], out=[];
-  const at=(ox,oz,r,period)=>out.push({x:p.x+p.exx*ox+p.ezx*oz, z:p.z+p.exz*ox+p.ezz*oz, r:((r%24)+24)%24, period});
-  if(K.floor && P.floor){ at(2,0,p.r,6); at(-2,0,p.r,6); at(0,2,p.r,6); at(0,-2,p.r,6); }
-  else if(K.line && P.floor){ const e=1-K.hz; at(0,e,p.r,12); at(0,-e,p.r,12); at(e,0,p.r+6,12); at(-e,0,p.r+6,12); }
-  else if(K.line && P.line){ at(2,0,p.r,12); at(-2,0,p.r,12); }
+function snapSlots(k,p,L){ const K=KINDS[k], P=KINDS[p.k], out=[];
+  const at=(ox,oz,r,period,y)=>out.push({x:p.x+p.exx*ox+p.ezx*oz, z:p.z+p.exz*ox+p.ezz*oz, r:((r%24)+24)%24, period, y});
+  if(K.floor && P.floor && levelEq(p.y,L)){ at(2,0,p.r,6,p.y); at(-2,0,p.r,6,p.y); at(0,2,p.r,6,p.y); at(0,-2,p.r,6,p.y); }
+  else if(K.line && P.floor && levelEq(p.top,L)){ const e=1-K.hz; at(0,e,p.r,12,p.top); at(0,-e,p.r,12,p.top); at(e,0,p.r+6,12,p.top); at(-e,0,p.r+6,12,p.top); }
+  else if(K.line && P.line && p.k===k && levelEq(p.y,L)){ at(2,0,p.r,12,p.y); at(-2,0,p.r,12,p.y); }
   return out; }
-function findSnap(k,x,z,r){ let best=null, bd=0.6;
+function findSnap(k,x,z,r,L){ let best=null, bd=0.6;
   for(const p of B.list){ if(Math.abs(p.x-x)>4 || Math.abs(p.z-z)>4) continue;
-    for(const s of snapSlots(k,p)){ const d=Math.hypot(s.x-x,s.z-z); if(d>=bd) continue;
+    for(const s of snapSlots(k,p,L)){ const d=Math.hypot(s.x-x,s.z-z); if(d>=bd) continue;
       const rr=nearestRot(s.r,r,s.period); if(rr==null) continue;
-      if(clashes(mkPiece('',k,s.x,s.z,rr))) continue;
-      best={x:s.x,z:s.z,r:rr}; bd=d; } }
+      if(clashes(mkPiece('',k,s.x,s.z,rr,null,s.y))) continue;
+      best={x:s.x,z:s.z,r:rr,y:s.y,snapped:true}; bd=d; } }
   return best; }
-let aimX=0, aimZ=0;
+// A ray against one piece's box (slab test in the piece's own frame); returns the entry point and that face's normal.
+function rayPiece(o,d,p,maxT){
+  const hh=KINDS[p.k].h/2, rx=o.x-p.x, ry=o.y-(p.y+hh), rz=o.z-p.z;
+  const lo=[rx*p.exx+rz*p.exz, ry, rx*p.ezx+rz*p.ezz], ld=[d.x*p.exx+d.z*p.exz, d.y, d.x*p.ezx+d.z*p.ezz], he=[p.hx,hh,p.hz];
+  let tmin=0, tmax=maxT, axis=-1, sgn=0;
+  for(let i=0;i<3;i++){
+    if(Math.abs(ld[i])<1e-9){ if(Math.abs(lo[i])>he[i]) return null; continue; }
+    let t1=(-he[i]-lo[i])/ld[i], t2=(he[i]-lo[i])/ld[i], s=-1;
+    if(t1>t2){ const tt=t1; t1=t2; t2=tt; s=1; }
+    if(t1>tmin){ tmin=t1; axis=i; sgn=s; }
+    if(t2<tmax) tmax=t2;
+    if(tmin>tmax) return null; }
+  if(axis<0) return null;   // the ray starts inside this piece
+  const n=axis===0?[sgn*p.exx,0,sgn*p.exz]:axis===1?[0,sgn,0]:[sgn*p.ezx,0,sgn*p.ezz];
+  return {t:tmin,p,x:o.x+d.x*tmin,y:o.y+d.y*tmin,z:o.z+d.z*tmin,nx:n[0],ny:n[1],nz:n[2]}; }
+function rayHit(o,d,maxT,cx,cz){ let best=null;
+  for(const p of B.list){ const dx=p.x-cx, dz=p.z-cz; if(dx*dx+dz*dz>(maxT+3)*(maxT+3)) continue;
+    const h=rayPiece(o,d,p,best?best.t:maxT); if(h) best=h; }
+  return best; }
+// Placement, from what the aiming ring is on:
+//   bare ground: free on the ground, snapping to ground floors and walls.  a floor's top: a floor goes beside it at the
+//   same height; anything else stands on it, snapping to its edges.  a crate's top: crates, lamps and terminals stack.
+//   a wall: a wall goes on top of it; a floor goes on top as a roof, on the side that already looks like a room.
+//   any other side: the piece goes next to that face, on whatever is under it.
+let aimRay=null;   // a fixed ray (tests)
+function roofSlot(W){ const e=1-KINDS[1].hz, y=W.top; let best=null;
+  for(const sd of [1,-1]){ const cx=W.x+W.ezx*e*sd, cz=W.z+W.ezz*e*sd; let score=0;
+    for(const V of B.list){ if(V.k!==1 || V===W || !levelEq(V.top,y) || Math.abs(V.x-cx)>1.3 || Math.abs(V.z-cz)>1.3) continue;
+      const lx=(V.x-cx)*W.exx+(V.z-cz)*W.exz, lz=(V.x-cx)*W.ezx+(V.z-cz)*W.ezz;
+      if((Math.abs(Math.abs(lx)-e)<0.15 && Math.abs(lz)<0.15) || (Math.abs(Math.abs(lz)-e)<0.15 && Math.abs(lx)<0.15)) score+=2; }
+    for(const F of B.floors) if(F.y<y-0.05 && Math.abs(F.x-cx)<0.25 && Math.abs(F.z-cz)<0.25){ score+=1; break; }
+    if(((cam.x-W.x)*W.ezx+(cam.z-W.z)*W.ezz)*sd>0) score+=0.5;
+    if(!best || score>best.score) best={x:cx,z:cz,r:W.r,y,score,snapped:true,how:'roof'}; }
+  return best; }
+function floorBeside(F,hit){ const lx=(hit.x-F.x)*F.exx+(hit.z-F.z)*F.exz, lz=(hit.x-F.x)*F.ezx+(hit.z-F.z)*F.ezz;
+  const ox=Math.abs(lx)>=Math.abs(lz)?Math.sign(lx||1)*2:0, oz=ox?0:Math.sign(lz||1)*2;
+  return {x:F.x+F.exx*ox+F.ezx*oz, z:F.z+F.exz*ox+F.ezz*oz, r:F.r, y:F.y, snapped:true, how:'beside a floor'}; }
+function freeAt(k,x,z,L){ const K=KINDS[k];
+  const s=findSnap(k,x,z,B.rot,L); if(s) return s;
+  if(K.floor && L>0.03) return {x,z,r:B.rot,y:L,reason:'Floors go on the ground, beside floors or on walls'};
+  if(!supportedAt(x,z,L)) return {x,z,r:B.rot,y:L,reason:'Needs something under it'};
+  let y=L; if(L<0.03 && !K.floor){ y=supportAt(x,z,0.15); }
+  return {x,z,r:B.rot,y,how:L>0.03?'on top':''}; }
+function computeGhost(){
+  const o=aimRay?aimRay.o:{x:cam.x,y:cam.y,z:cam.z}, d=aimRay?aimRay.d:{x:cam.fx,y:cam.fy,z:cam.fz};
+  const hit=rayHit(o,d,18,me.x,me.z);
+  const tg=d.y<-1e-4?-o.y/d.y:Infinity, on=hit && hit.t<tg?hit:null;
+  const k=B.sel, K=KINDS[k];
+  if(k===REMOVE){ const p=on?on.p:null;
+    return p?(Math.hypot(p.x-me.x,p.z-me.z)>REACH+1.5?{reason:'Too far',target:null}:{target:p}):{reason:'Aim at a piece',target:null}; }
+  let c=null;
+  if(on){ const S=on.p, SK=KINDS[S.k], topFace=on.ny>0.7;
+    if(k===1 && S.k===1) c={x:S.x,z:S.z,r:S.r,y:S.top,snapped:true,how:'on the wall'};
+    else if(K.floor && S.k===1) c=roofSlot(S);
+    else if(K.floor && SK.floor) c=floorBeside(S,on);
+    else if(topFace && (SK.floor || (SK.stack && !K.line && !K.floor))) c=freeAt(k,on.x,on.z,S.top);
+    else if(K.floor) c={x:on.x,z:on.z,r:B.rot,y:S.y,reason:'Floors go on the ground, beside floors or on walls'};
+    else { const off=Math.max(K.hx,K.hz)+0.05, x=on.x+on.nx*off, z=on.z+on.nz*off; c=freeAt(k,x,z,supportAt(x,z,S.y+0.05)); }
+  } else {
+    let gx,gz; if(tg<60){ gx=o.x+d.x*tg; gz=o.z+d.z*tg; } else { gx=me.x+Math.sin(camYaw)*REACH*0.7; gz=me.z+Math.cos(camYaw)*REACH*0.7; }
+    const dx=gx-me.x, dz=gz-me.z, dd=Math.hypot(dx,dz); if(dd>REACH){ gx=me.x+dx/dd*REACH; gz=me.z+dz/dd*REACH; }
+    c=freeAt(k,gx,gz,0);
+  }
+  c.x=r2(c.x); c.z=r2(c.z); c.y=r2(c.y);
+  if(!c.reason){ const cand=mkPiece('',k,c.x,c.z,c.r,null,c.y);
+    if(Math.hypot(c.x-me.x,c.z-me.z)>REACH+1.2 || c.y-me.y>6) c.reason='Too far';
+    else if(c.y<0.05 && Math.hypot(c.x,c.z)<PAD_R+Math.max(K.hx,K.hz)) c.reason='Not on the landing pad';
+    else if(B.list.length>=MAX_PIECES) c.reason='Piece limit ('+MAX_PIECES+') reached';
+    else if(B.readOnly) c.reason='View only: you can’t build here';
+    else if(clashes(cand)) c.reason='Blocked by another piece'; }
+  return c;
+}
 function updateGhost(){
   const g=B.ghost;
   if(!building){ ghost.visible=false; return; }
-  if(B.sel===REMOVE){ let best=null, bd=1e9;
-    for(const p of B.list){ if(!inside(p,aimX,aimZ,0.25)) continue; const d=Math.hypot(p.x-aimX,p.z-aimZ)+(KINDS[p.k].floor?100:0); if(d<bd){ bd=d; best=p; } }
-    g.target=best; g.valid=!!best; g.reason=best?'':'Aim at a piece';
-    if(best){ ghost.geometry=GHOST_G[best.k]; ghost.material=ghostBad; ghost.position.set(best.x,best.y+0.005,best.z); ghost.rotation.set(0,best.r*STEP,0); ghost.scale.set(1.03,1.03,1.03); ghost.visible=true; }
+  const c=computeGhost();
+  if(B.sel===REMOVE){ const p=c.target; g.target=p; g.valid=!!p; g.reason=c.reason||''; g.snapped=false; g.how='';
+    if(p){ ghost.geometry=GHOST_G[p.k]; ghost.material=ghostBad; ghost.position.set(p.x,p.y+0.005,p.z); ghost.rotation.set(0,p.r*STEP,0); ghost.scale.set(1.03,1.03,1.03); ghost.visible=true; }
     else ghost.visible=false;
     return; }
-  let x=r2(aimX), z=r2(aimZ), r=B.rot, snapped=false;
-  const s=findSnap(B.sel,x,z,r); if(s){ x=r2(s.x); z=r2(s.z); r=s.r; snapped=true; }
-  const cand=mkPiece('',B.sel,x,z,r); let reason='';
-  if(Math.hypot(x,z)<PAD_R+Math.max(cand.hx,cand.hz)) reason='Not on the landing pad';
-  else if(B.list.length>=MAX_PIECES) reason='Piece limit ('+MAX_PIECES+') reached';
-  else if(B.readOnly) reason='View only: you can’t build here';
-  else if(clashes(cand)) reason='Blocked by another piece';
-  Object.assign(g,{k:B.sel,x,z,r,valid:!reason,snapped,reason,target:null});
-  ghost.geometry=GHOST_G[B.sel]; ghost.material=reason?ghostBad:ghostOk; ghost.scale.set(1,1,1);
-  ghost.position.set(x,KINDS[B.sel].floor?0.005:baseAt(x,z)+0.005,z); ghost.rotation.set(0,r*STEP,0); ghost.visible=true;
+  Object.assign(g,{k:B.sel,x:c.x,z:c.z,y:c.y,r:c.r,valid:!c.reason,snapped:!!c.snapped,reason:c.reason||'',how:c.how||'',target:null});
+  ghost.geometry=GHOST_G[B.sel]; ghost.material=c.reason?ghostBad:ghostOk; ghost.scale.set(1,1,1);
+  ghost.position.set(c.x,c.y+0.005,c.z); ghost.rotation.set(0,c.r*STEP,0); ghost.visible=true;
 }
 function placePiece(){
   const g=B.ghost; if(!building) return;
@@ -677,11 +829,11 @@ function placePiece(){
   let ref=null, id;
   if(B.db){ try{ ref=B.db.collection('pieces').doc(); id=ref.id; }catch(e){ noteErr(e,'db'); } }
   if(!validId(id)) id='L'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36);
-  const p=mkPiece(id,g.k,g.x,g.z,g.r,N.me.id);
+  const p=mkPiece(id,g.k,g.x,g.z,g.r,N.me.id,g.y);
   B.evAdds.set(id,{p,at:Date.now(),src:'local'}); B.dirty=true; B.placed++;
-  emit('build',{op:'add',id,k:p.k,x:p.x,z:p.z,r:p.r});
+  emit('build',{op:'add',id,k:p.k,x:p.x,z:p.z,r:p.r,y:p.y});
   if(ref){ const t0=performance.now();
-    ref.set({v:1,k:p.k,x:p.x,z:p.z,r:p.r,by:N.me.id||null,t:Date.now()}).then(()=>{ B.writeOk++; pushCap(B.ack,performance.now()-t0,40); },
+    ref.set({v:1,k:p.k,x:p.x,z:p.z,r:p.r,y:p.y,by:N.me.id||null,t:Date.now()}).then(()=>{ B.writeOk++; pushCap(B.ack,performance.now()-t0,40); },
       e=>{ const c=(e&&e.code)||'error'; B.writeErr[c]=(B.writeErr[c]||0)+1; B.evAdds.delete(id); B.dirty=true; emit('build',{op:'del',id});
         if(c==='invalid_argument') B.readOnly=true; flashInfo('That piece wasn’t saved ('+c+')'); }); }
 }
@@ -689,34 +841,60 @@ function removePiece(p){ if(!p) return;
   B.tombs.set(p.id,Date.now()); B.evAdds.delete(p.id); B.dirty=true; B.removed++; emit('build',{op:'del',id:p.id});
   if(B.db) B.db.collection('pieces').doc(p.id).delete().then(()=>{ B.delOk++; },
     e=>{ const c=(e&&e.code)||'error'; B.writeErr[c]=(B.writeErr[c]||0)+1; B.tombs.delete(p.id); B.dirty=true; flashInfo('That piece wasn’t removed ('+c+')'); }); }
-// You can't walk through walls, rails, lamps or crates: push the capybara (a 0.38 m circle) out of each footprint.
-function collide(){ const R=0.38;
-  for(const p of B.list){ if(KINDS[p.k].floor) continue; const dx=me.x-p.x, dz=me.z-p.z; if(dx*dx+dz*dz>9) continue;
+// You can't walk through walls, rails, lamps, crates or terminals at your height. 0.3: anything whose top is within a
+// step (0.35 m) of your feet, or entirely below them, doesn't block, so you can jump over a single wall or a rail.
+const STEP_UP=0.35, HEAD=1.25, BODY_HI=1.2, CAP_R=0.38;
+function collide(){
+  for(const p of B.list){ if(KINDS[p.k].floor) continue; if(p.top<=me.y+STEP_UP || p.y>=me.y+BODY_HI) continue;
+    const dx=me.x-p.x, dz=me.z-p.z; if(dx*dx+dz*dz>9) continue;
     const lx=dx*p.exx+dz*p.exz, lz=dx*p.ezx+dz*p.ezz, cx=clamp(lx,-p.hx,p.hx), cz=clamp(lz,-p.hz,p.hz), qx=lx-cx, qz=lz-cz, d=Math.hypot(qx,qz);
-    if(d>=R) continue;
+    if(d>=CAP_R) continue;
     let mx, mz;
-    if(d>1e-4){ const k=(R-d)/d; mx=qx*k; mz=qz*k; }
-    else { const px=p.hx-Math.abs(lx), pz=p.hz-Math.abs(lz); if(px<pz){ mx=(lx<0?-1:1)*(px+R); mz=0; } else { mx=0; mz=(lz<0?-1:1)*(pz+R); } }
+    if(d>1e-4){ const k=(CAP_R-d)/d; mx=qx*k; mz=qz*k; }
+    else { const px=p.hx-Math.abs(lx), pz=p.hz-Math.abs(lz); if(px<pz){ mx=(lx<0?-1:1)*(px+CAP_R); mz=0; } else { mx=0; mz=(lz<0?-1:1)*(pz+CAP_R); } }
     me.x+=mx*p.exx+mz*p.ezx; me.z+=mx*p.exz+mz*p.ezz; me.bumps++; } }
+// 0.3: players ease apart instead of walking through each other (each moves only their own capybara, softly,
+// because the other is drawn about a quarter second late).
+const PS_R=0.9;
+function personalSpace(dt){
+  if(me.act===2) return;
+  for(const R of N.peers.values()){ if(!R.live || !R.capy) continue; const P=R.pose; if(P.a===2 || Math.abs(P.h-me.y)>1.0) continue;
+    const dx=me.x-P.x, dz=me.z-P.z, d=Math.hypot(dx,dz); if(d>=PS_R) continue;
+    const push=(PS_R-d)*Math.min(1,dt*10); if(d<1e-3){ me.x+=push; } else { me.x+=dx/d*push; me.z+=dz/d*push; } me.pushes++; } }
 
 // ================================================================ you
-const SPEED=2.6, JUMP_V=3.1, GRAV=3.1;      // stylised one-sixth gravity: about 2 s in the air, 1.5 m up
-const me={x:0,z:0,h:0,base:0,baseS:0,vx:0,vz:0,vy:0,yaw:0,spd:0,suit:0,fp:false,capy:null,jumps:0,waves:0,act:0,ap:0,nz:null,waveAt:0,bumps:0};
+const SPEED=2.6, JUMP_V=3.4, GRAV=3.05;      // stylised one-sixth gravity: about 2.2 s in the air, 1.9 m up (a 1.6 m wall clears)
+const me={x:0,y:0,ys:0,z:0,vx:0,vz:0,vy:0,gr:true,yaw:0,spd:0,suit:0,suitSet:false,fp:false,capy:null,jumps:0,waves:0,act:0,ap:0,nz:null,waveAt:0,bumps:0,pushes:0,bonks:0,tm:''};
 { const a=Math.random()*Math.PI*2, d=2.2+Math.random()*1.4; me.x=Math.cos(a)*d; me.z=Math.sin(a)*d; me.yaw=Math.atan2(-me.x,-me.z); }
-let camYaw=me.yaw, camPitch=0.2, view='shoulder', pivotY=0, building=false;
+let camYaw=me.yaw, camPitch=0.2, view='shoulder', pivotY=0, building=false, camDist=3.6, camFrac=1;
 me.capy=makeCapy(me.suit);
-// Suits: the artifact's owner wears Engineering, others Science. If two pick the same, the later peer label moves to a free one.
-function pickSuit(){
-  const pref=N.me.owner===false?1:0, taken=new Set();
-  for(const R of N.peers.values()) if(R.sk>=0 && N.me.peer && R.peer<N.me.peer) taken.add(R.sk);
-  let s=pref; if(taken.has(s)){ for(let i=0;i<SUIT_N;i++) if(!taken.has(i)){ s=i; break; } }
-  if(s!==me.suit){ me.suit=s; const old=me.capy; me.capy=makeCapy(s); me.capy.ph=old.ph; dropCapy(old); }
-}
+// Suits. 0.3: the artifact's owner always wears Engineering and never moves. Everyone else waits until they know whether
+// they're the owner and has been in the room a second (to see who wears what), then takes the first free suit after
+// Engineering. Whoever has been in the room longer keeps theirs (equal times: the earlier peer label), and a change
+// waits until a clash has lasted two checks. In 0.2 a joining player who didn't know yet took Engineering, which moved
+// the owner, then both moved back: the colours flickered until everyone had loaded.
+let suitPend=-1, suitPendN=0, suitChanges=0;
+function myAge(t){ return N.connAt?Math.round((t-N.connAt)/1000):0; }
+function desiredSuit(){
+  const t=Date.now(), own=N.me.owner, solo=N.state==='no-runtime' || N.state==='unavailable';
+  if(!solo && t-N.t0<5000 && (own==null || (!own && (!N.connAt || t-N.connAt<1200)))) return null;
+  if(own || solo) return 0;
+  const age=myAge(t), taken=new Set();
+  for(const R of N.peers.values()) if(R.live && R.sk>0 && N.me.peer && (R.ag>age+2 || (Math.abs(R.ag-age)<=2 && R.peer<N.me.peer))) taken.add(R.sk);
+  for(let s=1;s<SUIT_N;s++) if(!taken.has(s)) return s;
+  return 1; }
+function pickSuit(){ const d=desiredSuit(); if(d==null) return;
+  if(!me.suitSet){ me.suitSet=true; if(d!==me.suit) setSuit(d,true); return; }
+  if(d===me.suit){ suitPend=-1; suitPendN=0; return; }
+  if(d===suitPend) suitPendN++; else { suitPend=d; suitPendN=1; }
+  if(suitPendN>=2){ setSuit(d); suitPend=-1; suitPendN=0; } }
+function setSuit(s,first){ me.suit=s; if(!first) suitChanges++;   // the first pick isn't a change: nobody saw a suit before it
+  const old=me.capy; me.capy=makeCapy(s); me.capy.ph=old.ph; dropCapy(old); }
 // Nuzzle. When two players wave within 2.5 s of each other, standing within 2.6 m and facing each other (each within
 // about 57° of the other), the one with the lower peer label picks the meeting point and sends it. Both walk to marks
 // 0.8 m either side of it, so their raised helmets just touch.
 function tryNuzzle(R){
-  if(me.act===2) return;
+  if(me.act===2 || me.act===3) return;
   if(building){ N.nz.why='busy building'; return; }
   const t=Date.now();
   if(!(me.waveAt && R.waveHeardAt && Math.abs(me.waveAt-R.waveHeardAt)<2500 && t-me.waveAt<3000 && t-R.waveHeardAt<3000)) return;
@@ -724,14 +902,85 @@ function tryNuzzle(R){
   const mine=Math.abs(angDiff(me.yaw,Math.atan2(dx,dz))), theirs=Math.abs(angDiff(P.y,Math.atan2(-dx,-dz)));
   if(d>2.6){ N.nz.why='too far apart ('+d.toFixed(1)+' m, need 2.6)'; return; }
   if(d<0.3){ N.nz.why='too close'; return; }
+  if(Math.abs(P.h-me.y)>0.3){ N.nz.why='not on the same level'; return; }
   if(mine>1.0 || theirs>1.0){ N.nz.why='not facing (you '+Math.round(mine*57.3)+'°, them '+Math.round(theirs*57.3)+'°, need 57)'; return; }
   if(!N.me.peer || N.me.peer>R.peer){ N.nz.why='waiting for '+displayName(R)+' to start it'; return; }
   const ux=dx/d, uz=dz/d, mx=(me.x+P.x)/2, mz=(me.z+P.z)/2;
   if(emit('nuzzle',{with:R.peer,x:r2(mx),z:r2(mz),ux:r3(ux),uz:r3(uz)})){ N.nz.led++; N.nz.why='started with '+displayName(R); startNuzzle(mx,mz,ux,uz); }
 }
 function startNuzzle(mx,mz,fx,fz){   // f: unit vector from you toward your partner
-  me.act=2; me.ap=0; me.vx=me.vz=me.vy=0; me.h=0;
+  me.act=2; me.ap=0; me.vx=me.vz=me.vy=0;
   me.nz={sx:me.x,sz:me.z,syaw:me.yaw,mx:mx-fx*0.8,mz:mz-fz*0.8,fx,fz,face:Math.atan2(fx,fz)};
+}
+
+// ================================================================ science terminal: the spectrometer (co-op)
+// Two dials, frequency and amplitude, make a signal; match it to the dashed target and hold it for 1.5 s to log a sample.
+// With two players at one terminal, the earlier peer label turns frequency and the other amplitude; alone, you turn both;
+// a third player watches. Each player's dial travels in presence; the first player decides when a match has held and
+// sends "solved". The round number (samples logged) is saved on the terminal's database document, and the target for
+// each round is worked out from the terminal's id and that number, so both screens agree without sending it.
+const TS={open:false,id:null,f:0.5,a:0.5,held:0,flashUntil:0,mineF:true,mineA:true,leader:true,watcher:false,parts:[],
+  solved:0,heard:0,uses:0,F:0.5,A:0.5,m:0,cv:null,cx:null,cols:null,saveErr:{}};
+function termN(id){ return B.termN.get(id)||0; }
+function termTarget(id,n){ let h=2166136261>>>0; const s=id+':'+n;
+  for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; }
+  const a=(h%1000)/1000; h=Math.imul(h^(h>>>13),0x5bd1e995)>>>0; const b=(h%1000)/1000;
+  return {f:0.1+0.8*a,a:0.15+0.75*b}; }
+function nearTerminal(){ if(building || me.act!==0 || !me.gr) return null; let best=null, bd=1.9;
+  for(const p of B.list){ if(p.k!==5 || Math.abs(p.y-me.y)>0.45) continue; const dx=me.x-p.x, dz=me.z-p.z, d=Math.hypot(dx,dz); if(d>=bd) continue;
+    if(dx*p.ezx+dz*p.ezz>-0.15) continue;   // stand in front of the screen
+    best=p; bd=d; }
+  return best; }
+function openTerminal(p){ if(!p) return; TS.open=true; TS.id=p.id; TS.held=0; TS.uses++; me.act=3; me.ap=0; me.vx=me.vz=0; me.tm=p.id;
+  me.yaw=Math.atan2(p.x-me.x,p.z-me.z);
+  if(!TS.cx){ TS.cv=$('termCv'); TS.cx=TS.cv.getContext('2d'); const cs=getComputedStyle(document.documentElement);
+    TS.cols={sun:cs.getPropertyValue('--sun').trim()||'#ffb347',ice:cs.getPropertyValue('--ice').trim()||'#7fd4e6',ok:cs.getPropertyValue('--ok').trim()||'#7fe0a0',line:cs.getPropertyValue('--line').trim()||'rgba(255,236,200,.14)'}; }
+  $('term').hidden=false; $('walkPad').hidden=true; $('bUse').hidden=true; $('hint').hidden=true; stickEl.hidden=true; stick=null; }
+function closeTerminal(msg){ if(!TS.open) return; TS.open=false; TS.id=null; me.act=0; me.ap=0; me.tm='';
+  $('term').hidden=true; $('walkPad').hidden=false; $('hint').hidden=false; if(msg) flashStatus(msg); }
+function termParts(){ const L=[{peer:N.me.peer||'~',me:true,R:null}];
+  for(const R of N.peers.values()) if(R.live && R.tm===TS.id) L.push({peer:R.peer,me:false,R});
+  L.sort((a,b)=>a.peer<b.peer?-1:a.peer>b.peer?1:0); return L; }
+function terminalStep(dt){
+  const parts=termParts(), mi=parts.findIndex(q=>q.me), fP=parts[0], aP=parts.length>1?parts[1]:parts[0];
+  TS.parts=parts; TS.leader=mi===0; TS.watcher=mi>1; TS.mineF=fP.me; TS.mineA=aP.me;
+  TS.F=fP.me?TS.f:(fP.R.kf>=0?fP.R.kf:0.5); TS.A=aP.me?TS.a:(aP.R.ka>=0?aP.R.ka:0.5);
+  const n=termN(TS.id), tg=termTarget(TS.id,n);
+  const cf=Math.max(0,1-Math.abs(TS.F-tg.f)/0.1), ca=Math.max(0,1-Math.abs(TS.A-tg.a)/0.1); TS.m=cf*ca;
+  if(TS.m>=0.7) TS.held=Math.min(1.5,TS.held+dt); else TS.held=Math.max(0,TS.held-dt*2);
+  if(TS.leader && TS.held>=1.5){ emit('term',{op:'solved',id:TS.id,n}); applySolved(TS.id,n); saveRound(TS.id,n+1); }
+  me.vx=me.vz=0; me.spd=0; me.ap+=dt;
+}
+function applySolved(id,n){ if(n!==termN(id)) return; B.termN.set(id,n+1);
+  if(TS.open && TS.id===id){ TS.held=0; TS.solved++; TS.flashUntil=performance.now()+1800; } }
+function saveRound(id,n){ if(!B.db || !B.dbDocs.has(id)) return;
+  B.db.collection('pieces').doc(id).update({n}).then(()=>{},e=>{ const c=(e&&e.code)||'error'; TS.saveErr[c]=(TS.saveErr[c]||0)+1; }); }
+function nameOf(q){ return q.me?'you':displayName(q.R).toLowerCase(); }
+function termUI(tp){
+  const parts=TS.parts, fP=parts[0], aP=parts.length>1?parts[1]:parts[0], n=termN(TS.id);
+  $('termCount').textContent='samples logged '+n;
+  const kF=$('kF'), kA=$('kA');
+  kF.disabled=!TS.mineF; kA.disabled=!TS.mineA;
+  if(!TS.mineF) kF.value=String(Math.round(TS.F*1000)); if(!TS.mineA) kA.value=String(Math.round(TS.A*1000));
+  $('kFwho').textContent=nameOf(fP); $('kAwho').textContent=nameOf(aP);
+  $('termMatch').style.width=Math.round(TS.m*100)+'%'; $('termHold').style.width=Math.round(TS.held/1.5*100)+'%';
+  const foot=$('termFoot'), msg=$('termMsg'); let tx, done=false;
+  if(tp<TS.flashUntil){ tx='Sample logged. Next signal…'; done=true; }
+  else if(TS.watcher) tx='Two players are tuning. You’re watching.';
+  else if(parts.length===1) tx='Alone: you turn both dials. A second player takes one.';
+  else if(TS.m>=0.7) tx='Hold it steady…';
+  else tx='Match the dashed signal together, then hold it.';
+  foot.classList.toggle('done',done); msg.textContent=tx;
+}
+function drawTerm(ts){
+  const c=TS.cx; if(!c) return; const W=600, H=224, tg=termTarget(TS.id,termN(TS.id)), C=TS.cols;
+  c.clearRect(0,0,W,H); c.strokeStyle=C.line; c.lineWidth=1;
+  for(let i=1;i<8;i++){ c.beginPath(); c.moveTo(i*W/8,0); c.lineTo(i*W/8,H); c.stroke(); }
+  c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+  const wave=(f,a,col,wid,dash)=>{ c.strokeStyle=col; c.lineWidth=wid; c.setLineDash(dash); c.beginPath();
+    for(let i=0;i<=150;i++){ const u=i/150, y=H/2-a*H*0.44*Math.sin(Math.PI*2*(1+3*f)*u+ts*1.6); i?c.lineTo(u*W,y):c.moveTo(u*W,y); } c.stroke(); c.setLineDash([]); };
+  wave(tg.f,tg.a,C.sun,2,[10,8]);
+  wave(TS.F,TS.A,TS.m>=0.7?C.ok:C.ice,3.5,[]);
 }
 
 // ================================================================ remote players
@@ -742,10 +991,20 @@ N.onAct=(R,kind)=>{ if(kind!=='wave') return; R.waveHeardAt=Date.now(); tryNuzzl
 function displayName(R){ return R.name || (R.isMe?'YOU (other tab)':'PLAYER '+R.peer.slice(0,3).toUpperCase()); }
 function refreshName(R,t){ if(!N.user || !R.by || (R.nameBy===R.by && t-R.nameAt<30000)) return; R.nameAt=t; R.nameBy=R.by;
   N.user.profiles([R.by]).then(ps=>{ const p=ps&&ps[R.by]; R.name=((p&&p.name)||'').toUpperCase().slice(0,24); }).catch(()=>{}); }
+// 0.3: a player whose page is in the background, or whose updates stopped 3 s ago, shows as away. One whose updates
+// stopped 20 s ago, or who has come back as a new page (same account, newer and live), is hidden. In 0.2 a partner's
+// earlier page, still open but hidden, stayed on screen frozen for 4.5 minutes (it still answered pings).
+function peerState(R,t){
+  const stale=t-R.lastRecv;
+  R.superseded=stale>1000 && !!R.by && [...N.peers.values()].some(Q=>Q!==R && Q.by===R.by && Q.joinedAt>=R.joinedAt && t-Q.lastRecv<1500);
+  R.away=!!R.hid || stale>3000;
+  R.live=!R.away && !R.superseded && R.sk>=0;
+  R.hidden=R.superseded || stale>20000 || R.sk<0;
+}
 const tv=new THREE.Vector3();
 function placeTag(R,W,H){
   const el=R.tag; if(!el) return;
-  if(!R.capy || R.mode==='none'){ el.style.visibility='hidden'; return; }
+  if(!R.capy || R.mode==='none' || R.hidden){ el.style.visibility='hidden'; return; }
   tv.set(R.pose.x,R.pose.h+1.75,R.pose.z).applyMatrix4(camera.matrixWorldInverse);
   if(tv.z>-0.2){ el.style.visibility='hidden'; return; }
   tv.applyMatrix4(camera.projectionMatrix);
@@ -754,19 +1013,19 @@ function placeTag(R,W,H){
 }
 function tagText(R,t){ if(!R.tag) return; const age=t-R.lastRecv, m=pct(R.rtt,0.5);
   R.tag.firstChild.textContent=displayName(R);
-  R.tag.lastChild.textContent=age>1500?'paused '+Math.round(age/1000)+' s':(m!=null?m+' ms':'…');
-  R.tag.classList.toggle('stale',age>1500); }
+  R.tag.lastChild.textContent=R.away?(R.hid?'away':'away '+Math.round(age/1000)+' s'):(R.tm?'at a terminal':(m!=null?m+' ms':'…'));
+  R.tag.classList.toggle('stale',R.away); }
 
 // ================================================================ input
 const keys={f:0,b:0,l:0,r:0};
-let stick=null, look=null, jumpReq=0, moved=false, firstTouch=null;
+let stick=null, look=null, jumpReq=0, moved=false, firstTouch=null, wheels=0;
 const T_BOOT=performance.now();
 const stickEl=$('stick'), knob=$('knob');
 const STICK_R=52;
 function touched(){ if(firstTouch==null) firstTouch=(performance.now()-T_BOOT)/1000; wake(); }
 function lookSpeed(){ return view==='first'?0.0048:0.0058; }
 stage.addEventListener('pointerdown',e=>{ e.preventDefault(); touched();
-  if(e.pointerType!=='mouse' && !stick && e.clientX<window.innerWidth*0.45){
+  if(e.pointerType!=='mouse' && !stick && !TS.open && e.clientX<window.innerWidth*0.45){
     stick={id:e.pointerId,ox:e.clientX,oy:e.clientY,ix:0,iy:0};
     stickEl.style.transform='translate('+e.clientX+'px,'+e.clientY+'px)'; knob.style.transform=''; stickEl.hidden=false;
   } else if(!look){ look={id:e.pointerId,lx:e.clientX,ly:e.clientY,moved:0,t:performance.now(),mouse:e.pointerType==='mouse'}; }
@@ -783,15 +1042,23 @@ function endPtr(e){ if(stick && e.pointerId===stick.id){ stick=null; stickEl.hid
   if(look && e.pointerId===look.id){ const L=look; look=null;
     if(e.type==='pointerup' && L.mouse && building && L.moved<6 && performance.now()-L.t<450) placePiece(); } }   // a mouse click places
 stage.addEventListener('pointerup',endPtr); stage.addEventListener('pointercancel',endPtr); stage.addEventListener('lostpointercapture',endPtr);
+// 0.3: the mouse wheel turns the piece 15° a notch while building, and zooms the shoulder camera otherwise.
+let wheelAcc=0, wheelT=0;
+stage.addEventListener('wheel',e=>{ e.preventDefault(); wheels++; touched();
+  const dy=e.deltaY*(e.deltaMode===1?30:e.deltaMode===2?300:1), now=performance.now();
+  if(building){ if(now-wheelT>250) wheelAcc=0; wheelT=now; wheelAcc+=dy;
+    while(Math.abs(wheelAcc)>=90){ const s=Math.sign(wheelAcc); rotate(s>0?-1:1); wheelAcc-=s*90; } }
+  else camDist=clamp(camDist+dy*0.004,2.2,7); },{passive:false});
 function clampPitch(){ camPitch=view==='first'?clamp(camPitch,-1.2,1.2):clamp(camPitch,-0.3,1.1); }
 const KEYMAP={w:'f',arrowup:'f',s:'b',arrowdown:'b',a:'l',arrowleft:'l',d:'r',arrowright:'r'};
 window.addEventListener('keydown',e=>{ const k=String(e.key||'').toLowerCase();
   if(!$('diag').hidden){ if(k==='escape') setDiag(false); return; }
   touched();
+  if(TS.open){ if(k==='escape'||k==='u') closeTerminal(); return; }
   if(KEYMAP[k]){ keys[KEYMAP[k]]=1; e.preventDefault(); return; }
   if(k==='b'){ setBuilding(!building); return; }
-  if(building){ if(k>='1'&&k<='6') selectPiece(+k-1); else if(k==='q') rotate(1); else if(k==='r') rotate(-1); else if(k==='f'||k==='enter') placePiece(); else if(k==='escape') setBuilding(false); return; }
-  if(k===' '){ jumpReq=performance.now(); e.preventDefault(); } else if(k==='e') doWave(); else if(k==='v') toggleView(); else if(k==='`') openDiag(); });
+  if(building){ if(k>='1'&&k<='7') selectPiece(+k-1); else if(k==='q') rotate(1); else if(k==='r') rotate(-1); else if(k==='f'||k==='enter') placePiece(); else if(k==='escape') setBuilding(false); return; }
+  if(k===' '){ jumpReq=performance.now(); e.preventDefault(); } else if(k==='e') doWave(); else if(k==='v') toggleView(); else if(k==='u') openTerminal(nearTerminal()); else if(k==='`') openDiag(); });
 window.addEventListener('keyup',e=>{ const k=String(e.key||'').toLowerCase(); if(KEYMAP[k]) keys[KEYMAP[k]]=0; });
 window.addEventListener('blur',()=>{ keys.f=keys.b=keys.l=keys.r=0; stick=null; look=null; stickEl.hidden=true; });
 function flash(el){ el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),160); }
@@ -803,37 +1070,43 @@ $('bDone').onclick=()=>{ setBuilding(false); };
 $('bPlace').addEventListener('pointerdown',e=>{ e.preventDefault(); touched(); placePiece(); flash($('bPlace')); });
 $('bRotL').onclick=()=>{ rotate(1); flash($('bRotL')); };
 $('bRotR').onclick=()=>{ rotate(-1); flash($('bRotR')); };
+$('bUse').onclick=()=>{ touched(); openTerminal(nearTerminal()); };
+$('bLeave').onclick=()=>{ closeTerminal(); };
+$('kF').addEventListener('input',e=>{ TS.f=clamp((+e.target.value||0)/1000,0,1); });
+$('kA').addEventListener('input',e=>{ TS.a=clamp((+e.target.value||0)/1000,0,1); });
 document.querySelectorAll('#pieces button').forEach(b=>{ b.onclick=()=>selectPiece(+b.dataset.k); });
 function doWave(){ if(me.act!==0 || building) return; me.act=1; me.ap=0; me.waves++; me.waveAt=Date.now(); N.acts.sent++; emit('act',{kind:'wave'});
-  for(const R of N.peers.values()) tryNuzzle(R); }
+  for(const R of N.peers.values()) if(R.live) tryNuzzle(R); }
 function toggleView(){ view=view==='first'?'shoulder':'first'; $('bView').textContent=view==='first'?'3P':'1P'; clampPitch(); }
 function setBuilding(on){
   if(on && B.readOnly){ flashInfo('View only: you can’t build here'); return; }
-  if(on && me.act===2) return;
+  if(on && (me.act===2 || me.act===3)) return;
   building=on; $('walkPad').hidden=on; $('buildPad').hidden=!on; $('pieces').hidden=!on; $('cross').hidden=!on; $('buildInfo').hidden=!on; $('hint').hidden=on;
-  if(on){ if(me.act===1){ me.act=0; me.ap=0; } B.rot=((Math.round(camYaw/STEP)%24)+24)%24; }
+  if(on){ $('bUse').hidden=true; if(me.act===1){ me.act=0; me.ap=0; } B.rot=((Math.round(camYaw/STEP)%24)+24)%24; }
   else ghost.visible=false;
 }
 function selectPiece(k){ B.sel=k; document.querySelectorAll('#pieces button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.k===k)));
   const pb=$('bPlace'); pb.textContent=k===REMOVE?'Remove':'Place'; pb.classList.toggle('remove',k===REMOVE); }
 function rotate(d){ B.rot=((B.rot+d)%24+24)%24; }
-let infoMsg='', infoUntil=0;
+let infoMsg='', infoUntil=0, statusMsg='', statusUntil=0;
 function flashInfo(m){ infoMsg=m; infoUntil=performance.now()+2200; }
+function flashStatus(m){ statusMsg=m; statusUntil=performance.now()+3000; }
 function buildInfo(tp){
   const el=$('buildInfo'); if(!building) return; const g=B.ghost;
   if(tp<infoUntil){ el.innerHTML='<span class="bad"></span>'; el.firstChild.textContent=infoMsg; return; }
-  if(B.sel===REMOVE){ el.innerHTML='<b>REMOVE</b> · '+(g.target?KINDS[g.target.k].name.toLowerCase():'aim at a piece'); return; }
-  el.innerHTML='<b>'+KINDS[B.sel].name.toUpperCase()+'</b> · '+(g.r*15)+'°'+(g.snapped?' · <span class="snap">snapped</span>':'')+(g.reason?'<br><span class="bad"></span>':'')+'<br>'+B.list.length+' pieces';
+  if(B.sel===REMOVE){ el.innerHTML='<b>REMOVE</b> · '+(g.target?KINDS[g.target.k].name.toLowerCase()+(g.target.y>0.2?' at '+g.target.y.toFixed(1)+' m':''):'aim at a piece'); return; }
+  el.innerHTML='<b>'+KINDS[B.sel].name.toUpperCase()+'</b> · '+(g.r*15)+'°'+(g.y>0.2?' · '+g.y.toFixed(1)+' m up':'')+(g.snapped?' · <span class="snap">'+(g.how||'snapped')+'</span>':'')+(g.reason?'<br><span class="bad"></span>':'')+'<br>'+B.list.length+' pieces';
   if(g.reason) el.querySelector('.bad').textContent=g.reason;
 }
 let wakeLock='not asked';
 function wake(){ if(wakeLock!=='not asked') return; wakeLock='asked';
   try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(()=>{ wakeLock='on'; },()=>{ wakeLock='refused'; }); else wakeLock='unsupported'; }catch(_){ wakeLock='refused'; } }
-if(!('ontouchstart' in window) && !(navigator.maxTouchPoints>0)) $('hint').textContent='WASD walks · drag to look · Space jumps · E waves · V camera · B builds (Q/R turn, click places)';
+if(!('ontouchstart' in window) && !(navigator.maxTouchPoints>0)) $('hint').textContent='WASD walks · drag to look · wheel zooms · Space jumps · E waves · V camera · B builds (wheel or Q/R turn, click places) · U uses a terminal';
 
 // ================================================================ local movement and camera
 function updateLocal(dt,tp){
   if(me.act===2){ nuzzleStep(dt); return; }
+  if(me.act===3){ terminalStep(dt); vertical(dt,tp); return; }
   let ix=keys.r-keys.l, iy=keys.f-keys.b;
   if(stick){ ix+=stick.ix; iy+=stick.iy; }
   let mag=Math.hypot(ix,iy); if(mag>1){ ix/=mag; iy/=mag; mag=1; }
@@ -843,16 +1116,26 @@ function updateLocal(dt,tp){
   me.vx+=(tvx-me.vx)*k; me.vz+=(tvz-me.vz)*k;
   const ox=me.x, oz=me.z;
   me.x=clamp(me.x+me.vx*dt,-140,140); me.z=clamp(me.z+me.vz*dt,-140,140);
-  collide();
+  personalSpace(dt); collide();
   me.spd=dt>0?Math.min(SPEED*1.2,Math.hypot(me.x-ox,me.z-oz)/dt):0;
   if(view==='first') me.yaw=camYaw;
   else if(Math.hypot(me.vx,me.vz)>0.25){ const want=Math.atan2(me.vx,me.vz), d=angDiff(me.yaw,want), mx=9*dt; me.yaw+=clamp(d,-mx,mx); }
-  if(jumpReq && tp-jumpReq>160) jumpReq=0;
-  if(jumpReq && !building && me.h<=0 && me.vy<=0){ me.vy=JUMP_V; jumpReq=0; me.jumps++; }
-  if(me.h>0 || me.vy>0){ me.vy-=GRAV*dt; me.h+=me.vy*dt; if(me.h<=0){ me.h=0; me.vy=0; } }
   if(me.act===1){ me.ap+=dt; if(me.ap>=WAVE_DUR){ me.act=0; me.ap=0; } }
-  me.base=baseAt(me.x,me.z); me.baseS+=(me.base-me.baseS)*Math.min(1,dt*15);
+  vertical(dt,tp);
   me.fp=view==='first';
+}
+// Feet height, ground, steps, jumps, landing on what you were above, and ceilings.
+function vertical(dt,tp){
+  if(jumpReq && tp-jumpReq>160) jumpReq=0;
+  if(me.gr){
+    const s=supportAt(me.x,me.z,me.y+STEP_UP);
+    if(s>=me.y-0.02) me.y=s; else { me.gr=false; me.vy=0; }
+    if(me.gr && jumpReq && !building && me.act<=1){ me.vy=JUMP_V; me.gr=false; jumpReq=0; me.jumps++; }
+  }
+  if(!me.gr){ const py=me.y; me.vy-=GRAV*dt; me.y+=me.vy*dt;
+    if(me.vy>0){ const c=ceilingAt(me.x,me.z,py); if(me.y+HEAD>c){ me.y=Math.max(py,c-HEAD); me.vy=0; me.bonks++; } }
+    else { const s=supportAt(me.x,me.z,py+0.02); if(me.y<=s){ me.y=s; me.vy=0; me.gr=true; } } }
+  me.ys=me.gr?me.ys+(me.y-me.ys)*Math.min(1,dt*15):me.y;   // steps up onto a floor ease, jumps don't
 }
 function nuzzleStep(dt){
   const Z=me.nz, ox=me.x, oz=me.z; me.ap+=dt; const ap=me.ap;
@@ -863,29 +1146,24 @@ function nuzzleStep(dt){
   else { px=Z.mx-Z.fx*0.35; pz=Z.mz-Z.fz*0.35; me.act=0; me.ap=0; me.nz=null; }
   me.x=px; me.z=pz; me.yaw=yaw; me.spd=dt>0?Math.hypot(px-ox,pz-oz)/dt:0;
   if(view==='first') camYaw+=angDiff(camYaw,yaw)*Math.min(1,dt*6);
-  me.base=baseAt(me.x,me.z); me.baseS+=(me.base-me.baseS)*Math.min(1,dt*15); me.fp=view==='first';
+  vertical(dt,0); me.fp=view==='first';
 }
-const cam={x:0,y:0,z:0,fx:0,fy:0,fz:1};
+const cam={x:0,y:0,z:0,fx:0,fy:0,fz:1,pulled:0};
 function updateCamera(dt){
   const cy=camYaw, cp=camPitch, fx=Math.sin(cy)*Math.cos(cp), fy=-Math.sin(cp), fz=Math.cos(cy)*Math.cos(cp);
-  if(view==='first'){ cam.x=me.x+Math.sin(me.yaw)*1.0; cam.y=me.baseS+me.h+0.95; cam.z=me.z+Math.cos(me.yaw)*1.0; }
-  else { pivotY+=(me.baseS+me.h-pivotY)*Math.min(1,dt*8);
-    const rx=-Math.cos(cy), rz=Math.sin(cy), D=3.6;
-    cam.x=me.x-fx*D+rx*0.7; cam.y=Math.max(0.35,pivotY+1.2-fy*D+0.25); cam.z=me.z-fz*D+rz*0.7; }
+  if(view==='first'){ cam.x=me.x+Math.sin(me.yaw)*1.0; cam.y=me.ys+me.capy.lift.position.y+0.95; cam.z=me.z+Math.cos(me.yaw)*1.0; }
+  else { pivotY+=(me.ys-pivotY)*Math.min(1,dt*8);
+    const rx=-Math.cos(cy), rz=Math.sin(cy), D=camDist, px=me.x, py=pivotY+1.2, pz=me.z;
+    const vx=-fx*D+rx*0.7, vy=-fy*D+0.25, vz=-fz*D+rz*0.7, L=Math.hypot(vx,vy,vz);
+    // 0.3: the camera stops short of walls and roofs between it and you, so you can see yourself inside a room
+    let want=1; if(B.list.length){ const h=rayHit({x:px,y:py,z:pz},{x:vx/L,y:vy/L,z:vz/L},L,px,pz); if(h){ want=Math.max(0.12,(h.t-0.25)/L); cam.pulled++; } }
+    camFrac=want<camFrac?want:camFrac+(want-camFrac)*Math.min(1,dt*3);
+    cam.x=px+vx*camFrac; cam.y=Math.max(0.35,py+vy*camFrac); cam.z=pz+vz*camFrac; }
   cam.fx=fx; cam.fy=fy; cam.fz=fz;
   camera.position.set(cam.x,cam.y,cam.z);
   camera.lookAt(cam.x+fx,cam.y+fy,cam.z+fz);
   me.capy.neck.visible=me.capy.head.visible=view!=='first';   // first person: the camera is in your own helmet
   sky.position.set(cam.x,cam.y,cam.z);
-}
-// Where you're aiming: the screen centre's ray onto the ground, kept 1-6 m from you
-function updateAim(){
-  let gx, gz;
-  if(cam.fy<-0.02){ const t=-cam.y/cam.fy; gx=cam.x+cam.fx*t; gz=cam.z+cam.fz*t; if(t>40){ gx=me.x+Math.sin(camYaw)*REACH; gz=me.z+Math.cos(camYaw)*REACH; } }
-  else { gx=me.x+Math.sin(camYaw)*REACH; gz=me.z+Math.cos(camYaw)*REACH; }
-  let dx=gx-me.x, dz=gz-me.z, d=Math.hypot(dx,dz);
-  if(d<1e-3){ dx=Math.sin(camYaw); dz=Math.cos(camYaw); d=1; }
-  const dd=clamp(d,1.0,REACH); aimX=me.x+dx/d*dd; aimZ=me.z+dz/d*dd;
 }
 
 // ================================================================ resize
@@ -895,54 +1173,59 @@ function checkResize(){ const w=stage.clientWidth||window.innerWidth, h=stage.cl
   renderer.setSize(w,h,false); camera.aspect=w/h; camera.fov=w<h?62:50; camera.updateProjectionMatrix(); }
 
 // ================================================================ diagnostics
-const fpsHist=[], worstHist=[], startHist=[]; let frames=0, winStart=performance.now(), fpsNow=0, winWorst=0;
+const fpsHist=[], worstHist=[], startHist=[], startVis=[]; let frames=0, winStart=performance.now(), fpsNow=0, winWorst=0;
 let simSum=0, simMax=0, drawSum=0, drawMax=0, simMs=0, simMsMax=0, drawMs=0, drawMsMax=0, calls=0, tris=0, hidden=0;
-document.addEventListener('visibilitychange',()=>{ if(document.hidden) hidden++; });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ hidden++; sendHidden(); } });
+window.addEventListener('pagehide',()=>sendHidden());
 function statsLine(arr){ const v=arr.map(q=>q.v); return v.length?('avg '+f0(v.reduce((a,b)=>a+b,0)/v.length)+' max '+f0(Math.max(...v))):'--'; }
 function diagText(){
   const t=Date.now(), low=fpsHist.length?Math.min(...fpsHist):0, avg=fpsHist.length?fpsHist.reduce((a,b)=>a+b,0)/fpsHist.length:0;
   const echo=N.echo.rtt, conn=N.state==='open'?(N.ended?'ended ('+N.ended+')':N.connected?'live':(N.everConnected?'down':'connecting')):N.state;
-  const kc=KINDS.map(()=>0); for(const p of B.list) kc[p.k]++;
+  const kc=KINDS.map(()=>0); let raised=0; for(const p of B.list){ kc[p.k]++; if(p.y>0.2) raised++; }
+  const terms=B.list.filter(p=>p.k===5);
   const lines=[
     'LUNABARA NET PROBE '+BUILD,
     'fps now/low/avg: '+fpsNow+' / '+low+' / '+avg.toFixed(1)+' (last '+fpsHist.length+'s)  by second: '+fpsHist.join(' '),
     'startup fps by second: '+startHist.join(' ')+'  first touch at '+(firstTouch==null?'--':firstTouch.toFixed(1)+' s'),
+    'startup visible/focused by second: '+startVis.join(' '),
     'worst frame ms (last 10s): '+(worstHist.length?Math.max(...worstHist).toFixed(0):'--'),
     'cpu ms per frame: sim '+simMs.toFixed(2)+' (max '+simMsMax.toFixed(1)+')  draw submit '+drawMs.toFixed(2)+' (max '+drawMsMax.toFixed(1)+')',
     'draw calls: '+calls+'  triangles: '+tris+'  pixel ratio: '+DPR+' (device '+(window.devicePixelRatio||1)+')',
     'buffer: '+renderer.domElement.width+'x'+renderer.domElement.height+'  css: '+vw+'x'+vh+'  viewport: '+window.innerWidth+'x'+window.innerHeight+
       (window.visualViewport?'  visual: '+Math.round(visualViewport.width)+'x'+Math.round(visualViewport.height):'')+'  resizes: '+resizes,
-    'standalone: '+((navigator.standalone||matchMedia('(display-mode: standalone)').matches)?'yes':'no')+'  hidden: '+hidden+'x  wake lock: '+wakeLock,
+    'standalone: '+((navigator.standalone||matchMedia('(display-mode: standalone)').matches)?'yes':'no')+'  hidden: '+hidden+'x  wake lock: '+wakeLock+'  wheel events: '+wheels+'  camera distance '+camDist.toFixed(1)+' m (pulled in '+cam.pulled+' frames)',
     '--- room',
     'room: '+(N.state==='starting'?'waiting for use()':N.state==='no-runtime'?'no window.claude (not opened from the artifact link)':N.state==='unavailable'?'use("room") gave null after '+f0(N.useMs)+' ms':'ready after '+f0(N.useMs)+' ms'),
     'connection: '+conn+'  first connect after '+f0(N.firstConn)+' ms  drops (over 2 s): '+N.drops+'  blips: '+N.blips+'  down total: '+(N.downMs/1000).toFixed(1)+' s',
     'you: peer '+(N.me.peer||'--')+'  owner '+(N.me.owner==null?'?':N.me.owner?'yes':'no')+'  can edit '+(N.me.canEdit==null?'?':N.me.canEdit?'yes':'no')+
-      '  data write '+(N.canWrite==null?'?':N.canWrite?'yes':'no')+'  id '+(N.me.id?'yes':'no')+'  name '+(N.me.name?'yes':'no')+'  suit '+SUITS[me.suit].name+'  view '+view,
-    'players here: '+(N.peers.size+1)+' (you + '+N.peers.size+')  your other tabs: '+N.myTabs+'  guests: '+N.guests+'  agents: '+N.agents+'  peer updates: '+N.deliveries,
+      '  data write '+(N.canWrite==null?'?':N.canWrite?'yes':'no')+'  id '+(N.me.id?'yes':'no')+'  name '+(N.me.name?'yes':'no')+'  suit '+SUITS[me.suit].name+(me.suitSet?'':' (deciding)')+' (changed '+suitChanges+'x)  view '+view,
+    'players here: '+(N.peers.size+1)+' (you + '+N.peers.size+', live '+[...N.peers.values()].filter(R=>R.live).length+')  your other tabs: '+N.myTabs+'  guests: '+N.guests+'  agents: '+N.agents+'  peer updates: '+N.deliveries,
     'sending: presence target '+N.sendHz+'/s, actual '+(N.sentTimes.filter(x=>x>t-2000).length/2).toFixed(1)+'/s, '+N.bytes+' bytes  ok '+N.presOk+(Object.keys(N.presErr).length?'  errors '+JSON.stringify(N.presErr):''),
     'events: ok '+N.emitOk+'  skipped while offline '+N.emitSkipped+(Object.keys(N.emitErr).length?'  errors '+JSON.stringify(N.emitErr):'  errors none')+
       (Object.keys(N.emitBlocked).length?'  blocked: '+Object.keys(N.emitBlocked).join(','):''),
     'echo (your own event back): last '+f0(echo[echo.length-1])+'  median '+f0(pct(echo,0.5))+'  p90 '+f0(pct(echo,0.9))+'  max '+f0(echo.length?Math.max(...echo):null)+' ms  lost '+N.echo.lost+'/'+N.echo.sent,
-    'smoothing: '+(N.smooth?N.smooth+' ms behind (interpolation)':'off (raw: drawn at the newest update)')+'  waves sent '+N.acts.sent+' heard '+N.acts.heard+'  jumps '+me.jumps,
+    'smoothing: '+(N.smooth==='auto'?'auto (per player, below)':N.smooth?N.smooth+' ms behind':'off (raw: drawn at the newest update)')+'  waves sent '+N.acts.sent+' heard '+N.acts.heard+'  jumps '+me.jumps+'  ceiling bumps '+me.bonks+'  eased apart '+me.pushes+' frames',
     'nuzzles: started '+N.nz.led+'  joined '+N.nz.joined+'  hearts '+heartsShown+'  last mutual wave: '+N.nz.why,
   ];
   for(const R of N.peers.values()){
     const md=R.modes, tot=Math.max(1,md.interp+md.extrap+md.hold+md.early+md.raw), pc=v=>Math.round(v/tot*100)+'%';
-    const late=R.late.map(q=>q.v);
-    lines.push('peer '+displayName(R)+' ('+R.peer.slice(0,6)+(R.guest?', guest':'')+(R.isMe?', your other tab':'')+'): '+
-      'updates '+(R.recvs.filter(x=>x>t-2000).length/2).toFixed(1)+'/s  gaps '+statsLine(R.gaps)+' ms  jitter p95 '+f0(pct(late,0.95))+' ms  too late for buffer '+R.tooLate+'/'+R.n+
-      '  skipped seq '+R.skipped+'  bad '+R.bad+'  last update '+f0(R.lastRecv?t-R.lastRecv:null)+' ms ago');
+    const late=R.late.map(q=>q.v), st=R.superseded?'replaced by a newer page, hidden':R.hidden?'hidden (no updates for '+Math.round((t-R.lastRecv)/1000)+' s)':R.away?(R.hid?'away (page in background)':'away (no updates for '+Math.round((t-R.lastRecv)/1000)+' s)'):'live';
+    lines.push('peer '+displayName(R)+' ('+R.peer.slice(0,6)+(R.guest?', guest':'')+(R.isMe?', your other tab':'')+'): '+st+'  '+
+      'updates '+(R.recvs.filter(x=>x>t-2000).length/2).toFixed(1)+'/s  gaps '+statsLine(R.gaps)+' ms  jitter p95 '+f0(pct(late,0.95))+' ms  buffer '+f0(delayOf(R))+' ms'+(N.smooth==='auto'?' (auto, aiming '+f0(R.Dt)+')':'')+
+      '  too late for buffer '+R.tooLate+'/'+R.n+'  skipped seq '+R.skipped+'  bad '+R.bad+'  last update '+f0(R.lastRecv?t-R.lastRecv:null)+' ms ago');
     lines.push('  ping median '+f0(pct(R.rtt,0.5))+'  p90 '+f0(pct(R.rtt,0.9))+'  max '+f0(R.rtt.length?Math.max(...R.rtt):null)+' ms  lost '+R.pingLost+'/'+R.pingSent+
       '  drawn: interp '+pc(md.interp)+' extrap '+pc(md.extrap)+' hold '+pc(md.hold)+' early '+pc(md.early)+(md.raw?' raw '+pc(md.raw):'')+
-      '  suit '+(R.sk>=0?SUITS[R.sk].name:'--')+(R.fp?' (1P)':'')+'  waves heard '+R.acts+'  here '+Math.round((t-R.joinedAt)/1000)+' s');
+      '  suit '+(R.sk>=0?SUITS[R.sk].name:'deciding')+(R.fp?' (1P)':'')+(R.tm?'  at terminal '+R.tm.slice(0,6):'')+'  waves heard '+R.acts+'  here '+Math.round((t-R.joinedAt)/1000)+' s');
   }
   lines.push('--- build',
-    'database: '+B.dbState+(B.dbMs!=null?' after '+f0(B.dbMs)+' ms':'')+'  snapshots '+B.snaps+' (from cache '+B.cacheSnaps+', with your pending writes '+B.pendingSnaps+')  bad pieces '+B.bad+(B.readOnly?'  READ ONLY':''),
-    'pieces shown: '+B.list.length+' ('+KINDS.map((K,i)=>K.name.toLowerCase()+' '+kc[i]).join(', ')+')  saved '+B.dbDocs.size+'  waiting for the database '+B.evAdds.size+'  just removed '+B.tombs.size,
+    'database: '+B.dbState+(B.dbMs!=null?' after '+f0(B.dbMs)+' ms':'')+'  snapshots '+B.snaps+' (from cache '+B.cacheSnaps+', with your pending writes '+B.pendingSnaps+')  bad pieces '+B.bad+(B.legacy?'  from 0.2 (no height) '+B.legacy:'')+(B.readOnly?'  READ ONLY':''),
+    'pieces shown: '+B.list.length+' ('+KINDS.map((K,i)=>K.name.toLowerCase()+' '+kc[i]).join(', ')+')  raised '+raised+'  saved '+B.dbDocs.size+'  waiting for the database '+B.evAdds.size+'  just removed '+B.tombs.size,
     'yours: placed '+B.placed+'  removed '+B.removed+'  saved ok '+B.writeOk+'  removed ok '+B.delOk+(Object.keys(B.writeErr).length?'  errors '+JSON.stringify(B.writeErr):'  errors none')+
       '  save time median '+f0(pct(B.ack,0.5))+' max '+f0(B.ack.length?Math.max(...B.ack):null)+' ms',
     'others’ pieces: heard by event '+B.evHeard+'  event first '+B.evFirst+'  database first '+B.dbFirst+'  database behind the event: median '+f0(pct(B.dbAfterEv,0.5))+' max '+f0(B.dbAfterEv.length?Math.max(...B.dbAfterEv):null)+' ms',
-    'build mode: '+(building?'on, '+(B.sel===REMOVE?'remove':KINDS[B.sel].name.toLowerCase()+' at '+(B.rot*15)+'°'):'off')+'  wall bumps '+me.bumps+'  standing on '+(me.base>0?'a floor':'the ground'));
+    'build mode: '+(building?'on, '+(B.sel===REMOVE?'remove':KINDS[B.sel].name.toLowerCase()+' at '+(B.rot*15)+'°'+(B.ghost.reason?' ('+B.ghost.reason+')':B.ghost.how?' ('+B.ghost.how+')':'')):'off')+'  wall bumps '+me.bumps+'  feet at '+me.y.toFixed(2)+' m'+(me.gr?'':' (in the air)'),
+    'terminals: '+terms.length+(terms.length?' (samples logged '+terms.map(p=>termN(p.id)).join(', ')+')':'')+'  uses '+TS.uses+'  solved here '+TS.solved+'  heard solved '+TS.heard+(Object.keys(TS.saveErr).length?'  save errors '+JSON.stringify(TS.saveErr):'')+
+      (TS.open?'  open: '+TS.parts.length+' at it, you '+(TS.watcher?'watch':TS.mineF&&TS.mineA?'turn both':TS.mineF?'turn frequency':'turn amplitude')+', match '+TS.m.toFixed(2)+' held '+TS.held.toFixed(1)+' s':''));
   lines.push('3d library: '+(window.__lib||'?')+'  errors: '+errs.n+(errs.ext?'  (plus '+errs.ext+' hidden "Script error." from outside the page)':''));
   errs.list.forEach((x,i)=>lines.push(errLine(x,i+1))); if(errs.last) lines.push(errLine(errs.last,'latest'));
   lines.push('ua: '+navigator.userAgent);
@@ -954,36 +1237,39 @@ $('readout').onclick=openDiag;
 $('readout').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDiag(); } });
 $('diagShade').addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); setDiag(false); });
 $('bClose').onclick=()=>setDiag(false);
-const RATES=[10,15,20,30], SMOOTHS=[120,200,0,60];
+const RATES=[10,15,20,30], SMOOTHS=['auto',120,200,0,60];
 $('bRate').onclick=()=>{ N.sendHz=RATES[(RATES.indexOf(N.sendHz)+1)%RATES.length]; $('bRate').textContent='Send '+N.sendHz+'/s'; $('diagText').value=diagText(); };
-$('bSmooth').onclick=()=>{ N.smooth=SMOOTHS[(SMOOTHS.indexOf(N.smooth)+1)%SMOOTHS.length]; $('bSmooth').textContent=N.smooth?'Smooth '+N.smooth+' ms':'Smooth off';
+$('bSmooth').onclick=()=>{ N.smooth=SMOOTHS[(SMOOTHS.indexOf(N.smooth)+1)%SMOOTHS.length]; $('bSmooth').textContent=N.smooth==='auto'?'Smooth auto':N.smooth?'Smooth '+N.smooth+' ms':'Smooth off';
   for(const R of N.peers.values()){ R.modes={interp:0,extrap:0,hold:0,early:0,raw:0}; R.tooLate=0; R.n=0; } $('diagText').value=diagText(); };
 $('bCopy').onclick=()=>{ const ta=$('diagText'); ta.value=diagText();
   const fallback=()=>{ ta.focus(); ta.select(); $('diagMsg').textContent='Selected. Use your phone’s Copy.'; };
   try{ navigator.clipboard.writeText(ta.value).then(()=>{ $('diagMsg').textContent='Copied.'; },fallback); }catch(_){ fallback(); } };
 
 // ================================================================ HUD
-function hud(t){
+function hud(t,tp){
   $('fps').textContent=fpsNow||'--'; $('fpslow').textContent=fpsHist.length?Math.min(...fpsHist):'--';
-  $('nplay').textContent=String(N.peers.size+1);
-  const live=N.state==='open' && N.connected && !N.ended;
-  $('dot').className='dot'+(live?' live':(N.state==='open' && N.everConnected)||N.ended||N.state==='unavailable'?' down':'');
+  const live=[...N.peers.values()].filter(R=>R.live).length;
+  $('nplay').textContent=String(live+1);
+  const ok=N.state==='open' && N.connected && !N.ended;
+  $('dot').className='dot'+(ok?' live':(N.state==='open' && N.everConnected)||N.ended||N.state==='unavailable'?' down':'');
   const bp=bestPing(), em=pct(N.echo.rtt,0.5);
   $('pingLine').innerHTML=bp!=null?'ping <b>'+bp+'</b> ms':em!=null?'echo <b>'+em+'</b> ms':'ping <b>--</b> ms';
   let msg='Joining the co-op room…', warn=false;
-  if(N.state==='no-runtime'){ msg='Solo here. Open the artifact link to play together.'; warn=true; }
+  if(tp<statusUntil){ msg=statusMsg; }
+  else if(N.state==='no-runtime'){ msg='Solo here. Open the artifact link to play together.'; warn=true; }
   else if(N.state==='unavailable'){ msg='Co-op room not available in this view.'; warn=true; }
   else if(N.state==='open'){
     if(N.ended){ msg='Room closed ('+N.ended+').'; warn=true; }
     else if(!N.connected){ if(N.everConnected && N.downAt && t-N.downAt>2000){ msg='Connection lost. Reconnecting…'; warn=true; } else if(!N.everConnected) msg='Connecting…'; else msg=$('status').textContent; }
-    else if(!N.peers.size) msg='Alone here. Open this link on a second device.';
-    else msg=(N.peers.size+1)+' players on the regolith'+(bp!=null?' · ping '+bp+' ms':'');
+    else if(!live) msg=N.peers.size?'The others are away.':'Alone here. Open this link on a second device.';
+    else msg=(live+1)+' players on the regolith'+(bp!=null?' · ping '+bp+' ms':'');
   }
   const st=$('status'); st.textContent=msg; st.className=warn?'warn':'';
   const ta=$('diagText'); if(!$('diag').hidden && document.activeElement!==ta){ const sc=ta.scrollTop; ta.value=diagText(); ta.scrollTop=sc; }
   const E=$('err'); if(errs.n){ E.hidden=false; E.textContent=errs.n+' error'+(errs.n>1?'s':'')+' · tap the readout for the Diag'; }
   if(N.canWrite===false) B.readOnly=true;
   $('bBuild').disabled=B.readOnly;
+  $('bUse').hidden=!nearTerminal() || TS.open;
 }
 
 // ================================================================ start: compile every suit and piece behind the first frame, then run
@@ -999,36 +1285,39 @@ function frame(){
   const tp=performance.now(); let dt=(tp-last)/1000; last=tp;
   const ft=dt*1000; if(ft>winWorst) winWorst=ft; frames++;
   if(tp-winStart>=1000){ fpsNow=Math.round(frames*1000/(tp-winStart)); frames=0; winStart=tp;
-    pushCap(fpsHist,fpsNow,10); pushCap(worstHist,winWorst,10); winWorst=0; if(bootSec<12){ startHist.push(fpsNow); bootSec++; }
+    pushCap(fpsHist,fpsNow,10); pushCap(worstHist,winWorst,10); winWorst=0;
+    if(bootSec<12){ startHist.push(fpsNow); startVis.push((document.visibilityState==='visible'?'v':'h')+(document.hasFocus&&document.hasFocus()?'f':'-')); bootSec++; }
     simMs=simSum/Math.max(1,fpsNow); drawMs=drawSum/Math.max(1,fpsNow); simMsMax=simMax; drawMsMax=drawMax; simSum=drawSum=simMax=drawMax=0; }
   if(dt>0.1) dt=0.1;
   try{
     checkResize();
     const s0=performance.now(), t=Date.now(), ts=tp/1000;
     if(B.dirty || ((B.evAdds.size||B.tombs.size) && t-B.lastPrune>2000)) rebuildPieces();
+    for(const R of N.peers.values()) peerState(R,t);
     const prevAp=me.ap, prevAct=me.act;
     updateLocal(dt,tp);
     netTick(t);
     if(t-suitT>1000){ suitT=t; pickSuit(); }
-    poseCapy(me.capy,dt,ts,me.x,me.z,me.baseS,me.h,me.yaw,me.spd,me.act,me.ap);
+    poseCapy(me.capy,dt,ts,me.x,me.ys,me.z,!me.gr,me.yaw,me.spd,me.act,me.ap,me.gr?me.ys:supportAt(me.x,me.z,me.y+0.02));
     if(prevAct===2) heartsFor(me.capy,prevAp,me.act===2?me.ap:NUZ_DUR,2);
     for(const R of N.peers.values()){
+      if(N.smooth==='auto') adaptDelay(R,t,dt);
       const P=samplePose(R,t);
-      if(!P){ if(R.capy) R.capy.root.visible=false; continue; }
-      if(!R.capy || R.capy.si!==R.sk){ const old=R.capy; R.capy=makeCapy(R.sk<0?1:R.sk); if(old){ R.capy.ph=old.ph; dropCapy(old); } }
+      if(!P || R.hidden){ if(R.capy) R.capy.root.visible=false; continue; }
+      if(!R.capy || R.capy.si!==R.sk){ const old=R.capy; R.capy=makeCapy(R.sk); if(old){ R.capy.ph=old.ph; dropCapy(old); } }
       R.capy.root.visible=true;
-      const base=baseAt(P.x,P.z), jh=Math.max(0,P.h-base);
-      poseCapy(R.capy,dt,ts,P.x,P.z,base,jh,P.y,P.m,P.a,P.ap);
+      poseCapy(R.capy,dt,ts,P.x,P.h,P.z,!P.g,P.y,P.m,P.a,P.ap,supportAt(P.x,P.z,P.h+0.05));
       heartsFor(R.capy,R.lastAp,P.ap,P.a); R.lastAp=P.a===2?P.ap:0;
       refreshName(R,t);
     }
     updateHearts(dt);
     updateCamera(dt);
-    if(building){ updateAim(); updateGhost(); }
+    if(building) updateGhost();
+    if(TS.open){ drawTerm(ts); }
     beacon.visible=(t%1000)<140;
     camera.updateMatrixWorld();
     for(const R of N.peers.values()) placeTag(R,vw,vh);
-    if(tp-hudT>250){ hudT=tp; hud(t); for(const R of N.peers.values()) tagText(R,t); buildInfo(tp); }
+    if(tp-hudT>250){ hudT=tp; hud(t,tp); for(const R of N.peers.values()) tagText(R,t); buildInfo(tp); if(TS.open) termUI(tp); }
     const s1=performance.now();
     renderer.render(scene,camera);
     const s2=performance.now();
@@ -1037,8 +1326,9 @@ function frame(){
   }catch(e){ noteErr(e,'frame'); }
 }
 requestAnimationFrame(frame);
-window.__np={N,B,me,KINDS,diag:diagText,get view(){ return view; },get building(){ return building; },
+window.__np={N,B,TS,me,KINDS,diag:diagText,get view(){ return view; },get building(){ return building; },
   get camYaw(){ return camYaw; },set camYaw(v){ camYaw=v; },get camPitch(){ return camPitch; },set camPitch(v){ camPitch=v; },
-  get aim(){ return {x:aimX,z:aimZ}; },baseAt,samplePose,setBuilding,selectPiece,rotate,placePiece,heartsShown:()=>heartsShown};
+  set aimRay(v){ aimRay=v; },supportAt,samplePose,setBuilding,selectPiece,rotate,placePiece,heartsShown:()=>heartsShown,
+  nearTerminal,openTerminal,closeTerminal,termTarget,termN,setDials:(f,a)=>{ if(f!=null) TS.f=f; if(a!=null) TS.a=a; },suitChanges:()=>suitChanges};
 })();
 </script>
