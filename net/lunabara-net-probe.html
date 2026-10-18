@@ -56,8 +56,8 @@
 
   #hint,#buildInfo{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 24px);max-width:calc(100% - 230px);
         font-size:11px;line-height:1.45;color:var(--dim);pointer-events:none;transition:opacity .8s;text-shadow:0 1px 3px #000;}
-  #hint.gone{opacity:0;}
-  #buildInfo{color:var(--text);transition:none;}
+  #hint.gone{opacity:0;} #hint.keys.gone{opacity:.55;}   /* with a keyboard the key list stays, dimmed */
+  #buildInfo{color:var(--text);transition:none;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);}   /* 0.4: above the build Jump button */
   #buildInfo b{font-family:var(--pixel);font-weight:400;font-size:12px;letter-spacing:.06em;color:var(--sun);}
   #buildInfo .bad{color:var(--warn);} #buildInfo .snap{color:var(--ice);}
 
@@ -74,6 +74,7 @@
   .pad .sa{right:90px;bottom:8px;width:58px;height:58px;}
   .pad .sb{right:10px;bottom:92px;width:58px;height:58px;}
   .pad .sc{right:90px;bottom:92px;width:58px;height:58px;}
+  .pad .sd{right:170px;bottom:8px;width:58px;height:58px;}   /* 0.4: jump while building */
   .pad button.on{background:var(--ice-wash);}
   .pad .big.on{background:var(--sun-wash);}
   .pad svg{width:22px;height:22px;}
@@ -137,6 +138,7 @@
   #diag .row{flex:none;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;font-size:11px;color:var(--dim);}
   #diag .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
   #diag button{min-height:36px;padding:8px 12px;}
+  #diag button.arm,#diag #bClear.arm{border-color:var(--warn);color:var(--warn);}
   #err{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 300px);font-size:11px;color:var(--warn);text-align:center;pointer-events:none;}
   @media (prefers-reduced-motion: reduce){ #hint{transition:none;} }
 </style>
@@ -172,6 +174,7 @@
   <button id="bDone" class="sc" aria-label="Finish building">Done</button>
   <button id="bRotL" class="sa" aria-label="Turn 15 degrees anticlockwise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.1-5"/><path d="M5 4v4h4"/></svg><small>15°</small></button>
   <button id="bPlace" class="big" aria-label="Place piece">Place</button>
+  <button id="bJump2" class="sd" aria-label="Jump">Jump</button>
 </div>
 <div id="pieces" role="group" aria-label="Pieces" hidden>
   <button data-k="0" aria-pressed="true">Floor</button>
@@ -201,6 +204,7 @@
     <span class="btns">
       <button id="bRate">Send 20/s</button>
       <button id="bSmooth">Smooth auto</button>
+      <button id="bClear">Clear all</button>
       <button id="bCopy">Copy</button>
       <button id="bClose">Close</button>
     </span>
@@ -232,7 +236,7 @@ if(!window.THREE){ window.__lib='fallback: plain load'; document.write('<script 
 </script>
 <script>
 (function(){
-const BUILD='0.3';
+const BUILD='0.4';
 const $=id=>document.getElementById(id);
 $('buildLine').textContent='net probe '+BUILD+' · co-op test';
 const errs=window.__errs;
@@ -654,6 +658,7 @@ const ghostBad=new THREE.MeshBasicMaterial({color:0xff7a59,transparent:true,opac
 const ghost=new THREE.Mesh(GHOST_G[0],ghostOk); ghost.visible=false; ghost.renderOrder=3; scene.add(ghost);
 const B={db:null, dbState:'waiting', dbMs:null, snaps:0, cacheSnaps:0, pendingSnaps:0,
   dbDocs:new Map(), evAdds:new Map(), tombs:new Map(), list:[], floors:[], dirty:true, lastPrune:0, legacy:0, termN:new Map(),
+  clear:{running:false,n:0,done:0,err:{},t0:0,ms:null,retries:0,runs:0}, clearsHeard:0, lastPlaced:'',
   placed:0, removed:0, writeOk:0, writeErr:{}, delOk:0, ack:[], evHeard:0, evFirst:0, dbFirst:0, dbAfterEv:[], dbSeen:new Map(), readOnly:false, bad:0,
   sel:0, rot:0, ghost:{k:0,x:0,z:0,y:0,r:0,valid:false,snapped:false,reason:'',target:null,how:''}};
 function mkPiece(id,k,x,z,r,by,y){ const a=r*STEP, c=Math.cos(a), s=Math.sin(a), K=KINDS[k], yy=y==null?0:y;
@@ -678,7 +683,30 @@ function onBuildEvent(d){
     if(B.tombs.has(p.id) || B.evAdds.has(p.id)) return;
     B.evAdds.set(p.id,{p,at:t,src:'event'}); B.dirty=true; }
   else if(d.op==='del' && validId(d.id)){ B.tombs.set(d.id,t); B.evAdds.delete(d.id); B.dirty=true; }
+  else if(d.op==='clear'){ clearShown(t); B.clearsHeard++; flashStatus('Someone cleared all the pieces.'); }
 }
+// 0.4 (debug): Clear all, from the Diag. Every piece shown is held off for 60 s while the database deletes arrive; a
+// piece whose delete fails comes back after that, as with a single removal.
+function clearShown(t){ for(const id of B.dbDocs.keys()) B.tombs.set(id,t+40000); for(const id of B.evAdds.keys()) B.tombs.set(id,t+40000);
+  B.evAdds.clear(); B.dirty=true; }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function clearAll(){
+  if(!B.db || B.readOnly || B.clear.running) return false;
+  const t=Date.now(), ids=[...new Set([...B.dbDocs.keys(),...B.evAdds.keys()])];
+  clearShown(t); emit('build',{op:'clear'});
+  const C=B.clear; C.running=true; C.n=ids.length; C.done=0; C.err={}; C.t0=t; C.ms=null; C.retries=0;
+  let i=0;
+  const worker=async()=>{ while(i<ids.length){ const id=ids[i++];
+    for(let tries=0;;tries++){
+      try{ await B.db.collection('pieces').doc(id).delete(); C.done++; break; }
+      catch(e){ const c=(e&&e.code)||'error';
+        if((c==='resource_exhausted'||c==='unavailable') && tries<4){ C.retries++; await sleep(600*(tries+1)+Math.random()*300); continue; }
+        C.err[c]=(C.err[c]||0)+1; break; } } } };
+  await Promise.all([worker(),worker(),worker()]);   // three at a time: the database limits writes per viewer
+  C.running=false; C.ms=Date.now()-t; C.runs++;
+  const bad=Object.values(C.err).reduce((a,b)=>a+b,0);
+  flashStatus(bad?'Cleared '+C.done+' of '+C.n+' pieces ('+bad+' failed).':'Cleared '+C.done+' pieces.');
+  return true; }
 // The shown list: the database's pieces, plus pieces heard about but not yet in the database, minus pieces just removed.
 function rebuildPieces(){
   const t=Date.now(); B.lastPrune=t;
@@ -708,9 +736,16 @@ const levelEq=(a,b)=>Math.abs(a-b)<0.03;
 // The highest surface (floor, crate or wall top) under x,z that is no higher than maxTop; the ground is 0.
 function supportAt(x,z,maxTop){ let s=0; for(const p of B.list){ if(!KINDS[p.k].sup || p.top>maxTop || p.top<=s) continue;
   if(Math.abs(p.x-x)>1.5 || Math.abs(p.z-z)>1.5) continue; if(inside(p,x,z,0.05)) s=p.top; } return s; }
-// The lowest raised floor above someone whose feet were at y: it stops a jump from below.
-function ceilingAt(x,z,y){ let c=Infinity; for(const p of B.floors){ if(p.y<=y+0.3 || p.y>=c) continue;
-  if(Math.abs(p.x-x)>1.5 || Math.abs(p.z-z)>1.5) continue; if(inside(p,x,z,0.05)) c=p.y; } return c; }
+// How high the feet may rise under raised floors before the capybara touches one, for someone facing yaw whose feet
+// were at y. 0.4: tested over the whole capybara, not just its middle. The helmet's centre is 0.87 m ahead of the
+// middle and its top 1.37 m up, so in 0.3 a jump with the middle outside a roof and the head under it went through.
+const HELM_F=0.87, HELM_R=0.42, HELM_TOP=1.37, BACK_TOP=1.08, BODY_PTS=[-0.4,0,0.45];
+function headRoom(x,z,yaw,y){ let lim=Infinity; const fx=Math.sin(yaw), fz=Math.cos(yaw);
+  for(const p of B.floors){ if(p.y<=y+0.3) continue;
+    if(Math.abs(p.x-x)>2.8 || Math.abs(p.z-z)>2.8) continue;
+    if(p.y-HELM_TOP<lim && inside(p,x+fx*HELM_F,z+fz*HELM_F,HELM_R)) lim=p.y-HELM_TOP;
+    if(p.y-BACK_TOP<lim) for(const o of BODY_PTS) if(inside(p,x+fx*o,z+fz*o,0.36)){ lim=p.y-BACK_TOP; break; } }
+  return lim; }
 // Footprint overlap (separating axes). Floors only clash with floors, everything else with everything else, and only
 // where their heights overlap. Walls and rails are shortened 16 cm at each end for the test, so two meet at a corner.
 function shrink(k){ const K=KINDS[k]; return [K.hx-(K.line?0.16:0.02), K.hz-0.02]; }
@@ -781,8 +816,16 @@ function freeAt(k,x,z,L){ const K=KINDS[k];
   if(!supportedAt(x,z,L)) return {x,z,r:B.rot,y:L,reason:'Needs something under it'};
   let y=L; if(L<0.03 && !K.floor){ y=supportAt(x,z,0.15); }
   return {x,z,r:B.rot,y,how:L>0.03?'on top':''}; }
+// 0.4: with a mouse, the aim goes from the camera through the pointer instead of the middle of the screen.
+const _mv=new THREE.Vector3();
+function mouseRay(){ if(!mouse.on || !vw || !vh) return null;
+  _mv.set(mouse.x/vw*2-1,1-mouse.y/vh*2,0.5).unproject(camera);
+  const dx=_mv.x-cam.x, dy=_mv.y-cam.y, dz=_mv.z-cam.z, L=Math.hypot(dx,dy,dz);
+  if(!(L>1e-6)) return null;
+  return {o:{x:cam.x,y:cam.y,z:cam.z},d:{x:dx/L,y:dy/L,z:dz/L}}; }
 function computeGhost(){
-  const o=aimRay?aimRay.o:{x:cam.x,y:cam.y,z:cam.z}, d=aimRay?aimRay.d:{x:cam.fx,y:cam.fy,z:cam.fz};
+  const mr=aimRay?null:mouseRay(), R0=aimRay||mr;
+  const o=R0?R0.o:{x:cam.x,y:cam.y,z:cam.z}, d=R0?R0.d:{x:cam.fx,y:cam.fy,z:cam.fz};
   const hit=rayHit(o,d,18,me.x,me.z);
   const tg=d.y<-1e-4?-o.y/d.y:Infinity, on=hit && hit.t<tg?hit:null;
   const k=B.sel, K=KINDS[k];
@@ -810,9 +853,12 @@ function computeGhost(){
     else if(clashes(cand)) c.reason='Blocked by another piece'; }
   return c;
 }
+const crossEl=$('cross'); let crossAt='';
 function updateGhost(){
   const g=B.ghost;
   if(!building){ ghost.visible=false; return; }
+  const ca=mouse.on&&!aimRay?Math.round(mouse.x)+','+Math.round(mouse.y):'';   // the ring follows a mouse pointer
+  if(ca!==crossAt){ crossAt=ca; if(ca){ crossEl.style.left=Math.round(mouse.x)+'px'; crossEl.style.top=Math.round(mouse.y)+'px'; } else { crossEl.style.left=''; crossEl.style.top=''; } }
   const c=computeGhost();
   if(B.sel===REMOVE){ const p=c.target; g.target=p; g.valid=!!p; g.reason=c.reason||''; g.snapped=false; g.how='';
     if(p){ ghost.geometry=GHOST_G[p.k]; ghost.material=ghostBad; ghost.position.set(p.x,p.y+0.005,p.z); ghost.rotation.set(0,p.r*STEP,0); ghost.scale.set(1.03,1.03,1.03); ghost.visible=true; }
@@ -830,6 +876,7 @@ function placePiece(){
   if(B.db){ try{ ref=B.db.collection('pieces').doc(); id=ref.id; }catch(e){ noteErr(e,'db'); } }
   if(!validId(id)) id='L'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36);
   const p=mkPiece(id,g.k,g.x,g.z,g.r,N.me.id,g.y);
+  B.lastPlaced=KINDS[g.k].name.toLowerCase()+' at '+(g.r*15)+'°'+(g.y>0.2?', '+g.y.toFixed(1)+' m up':'')+(g.r!==B.rot?' (you had '+(B.rot*15)+'°; '+(g.how||'snapped')+' set it)':' (as you turned it)');
   B.evAdds.set(id,{p,at:Date.now(),src:'local'}); B.dirty=true; B.placed++;
   emit('build',{op:'add',id,k:p.k,x:p.x,z:p.z,r:p.r,y:p.y});
   if(ref){ const t0=performance.now();
@@ -843,9 +890,10 @@ function removePiece(p){ if(!p) return;
     e=>{ const c=(e&&e.code)||'error'; B.writeErr[c]=(B.writeErr[c]||0)+1; B.tombs.delete(p.id); B.dirty=true; flashInfo('That piece wasn’t removed ('+c+')'); }); }
 // You can't walk through walls, rails, lamps, crates or terminals at your height. 0.3: anything whose top is within a
 // step (0.35 m) of your feet, or entirely below them, doesn't block, so you can jump over a single wall or a rail.
-const STEP_UP=0.35, HEAD=1.25, BODY_HI=1.2, CAP_R=0.38;
+// 0.4: a raised floor (a roof) blocks too while it's at body height, so a jump can't carry you sideways into its edge.
+const STEP_UP=0.35, BODY_HI=1.2, CAP_R=0.38;
 function collide(){
-  for(const p of B.list){ if(KINDS[p.k].floor) continue; if(p.top<=me.y+STEP_UP || p.y>=me.y+BODY_HI) continue;
+  for(const p of B.list){ if(p.top<=me.y+STEP_UP || p.y>=me.y+(KINDS[p.k].floor?BACK_TOP:BODY_HI)) continue;
     const dx=me.x-p.x, dz=me.z-p.z; if(dx*dx+dz*dz>9) continue;
     const lx=dx*p.exx+dz*p.exz, lz=dx*p.ezx+dz*p.ezz, cx=clamp(lx,-p.hx,p.hx), cz=clamp(lz,-p.hz,p.hz), qx=lx-cx, qz=lz-cz, d=Math.hypot(qx,qz);
     if(d>=CAP_R) continue;
@@ -864,7 +912,7 @@ function personalSpace(dt){
 
 // ================================================================ you
 const SPEED=2.6, JUMP_V=3.4, GRAV=3.05;      // stylised one-sixth gravity: about 2.2 s in the air, 1.9 m up (a 1.6 m wall clears)
-const me={x:0,y:0,ys:0,z:0,vx:0,vz:0,vy:0,gr:true,yaw:0,spd:0,suit:0,suitSet:false,fp:false,capy:null,jumps:0,waves:0,act:0,ap:0,nz:null,waveAt:0,bumps:0,pushes:0,bonks:0,tm:''};
+const me={x:0,y:0,ys:0,z:0,vx:0,vz:0,vy:0,gr:true,yaw:0,spd:0,suit:0,suitSet:false,fp:false,capy:null,jumps:0,waves:0,act:0,ap:0,nz:null,waveAt:0,bumps:0,pushes:0,bonks:0,buildJumps:0,keyTurn:0,tm:''};
 { const a=Math.random()*Math.PI*2, d=2.2+Math.random()*1.4; me.x=Math.cos(a)*d; me.z=Math.sin(a)*d; me.yaw=Math.atan2(-me.x,-me.z); }
 let camYaw=me.yaw, camPitch=0.2, view='shoulder', pivotY=0, building=false, camDist=3.6, camFrac=1;
 me.capy=makeCapy(me.suit);
@@ -1017,14 +1065,18 @@ function tagText(R,t){ if(!R.tag) return; const age=t-R.lastRecv, m=pct(R.rtt,0.
   R.tag.classList.toggle('stale',R.away); }
 
 // ================================================================ input
-const keys={f:0,b:0,l:0,r:0};
+const keys={f:0,b:0,l:0,r:0,tl:0,tr:0};
 let stick=null, look=null, jumpReq=0, moved=false, firstTouch=null, wheels=0;
+// 0.4: with a mouse, building aims where the pointer is (no dragging to aim); touch keeps the ring in the middle.
+const mouse={on:false,x:0,y:0};
+const TURN_KEY=1.9;   // Q/E turn the camera, radians a second
 const T_BOOT=performance.now();
 const stickEl=$('stick'), knob=$('knob');
 const STICK_R=52;
 function touched(){ if(firstTouch==null) firstTouch=(performance.now()-T_BOOT)/1000; wake(); }
 function lookSpeed(){ return view==='first'?0.0048:0.0058; }
 stage.addEventListener('pointerdown',e=>{ e.preventDefault(); touched();
+  if(e.pointerType==='mouse'){ mouse.on=true; mouse.x=e.clientX; mouse.y=e.clientY; } else mouse.on=false;
   if(e.pointerType!=='mouse' && !stick && !TS.open && e.clientX<window.innerWidth*0.45){
     stick={id:e.pointerId,ox:e.clientX,oy:e.clientY,ix:0,iy:0};
     stickEl.style.transform='translate('+e.clientX+'px,'+e.clientY+'px)'; knob.style.transform=''; stickEl.hidden=false;
@@ -1032,6 +1084,7 @@ stage.addEventListener('pointerdown',e=>{ e.preventDefault(); touched();
   try{ stage.setPointerCapture(e.pointerId); }catch(_){}
 });
 stage.addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse'){ mouse.on=true; mouse.x=e.clientX; mouse.y=e.clientY; } else mouse.on=false;
   if(stick && e.pointerId===stick.id){ let dx=e.clientX-stick.ox, dy=e.clientY-stick.oy; const d=Math.hypot(dx,dy); if(d>STICK_R){ dx*=STICK_R/d; dy*=STICK_R/d; }
     stick.ix=dx/STICK_R; stick.iy=-dy/STICK_R; if(Math.hypot(stick.ix,stick.iy)<0.12){ stick.ix=0; stick.iy=0; }
     knob.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px)'; }
@@ -1042,27 +1095,37 @@ function endPtr(e){ if(stick && e.pointerId===stick.id){ stick=null; stickEl.hid
   if(look && e.pointerId===look.id){ const L=look; look=null;
     if(e.type==='pointerup' && L.mouse && building && L.moved<6 && performance.now()-L.t<450) placePiece(); } }   // a mouse click places
 stage.addEventListener('pointerup',endPtr); stage.addEventListener('pointercancel',endPtr); stage.addEventListener('lostpointercapture',endPtr);
-// 0.3: the mouse wheel turns the piece 15° a notch while building, and zooms the shoulder camera otherwise.
-let wheelAcc=0, wheelT=0;
+// The mouse wheel turns the piece 15° a notch while building, and zooms the shoulder camera otherwise.
+// 0.4: exactly one step per wheel notch. 0.3 counted 90 units a step, so a mouse sending 100-120 a notch sometimes
+// turned 30° at once. Small deltas (a trackpad) still add up, 90 to a step.
+let wheelAcc=0, wheelT=0, wheelLast='--', wheelSteps=0;
 stage.addEventListener('wheel',e=>{ e.preventDefault(); wheels++; touched();
   const dy=e.deltaY*(e.deltaMode===1?30:e.deltaMode===2?300:1), now=performance.now();
-  if(building){ if(now-wheelT>250) wheelAcc=0; wheelT=now; wheelAcc+=dy;
-    while(Math.abs(wheelAcc)>=90){ const s=Math.sign(wheelAcc); rotate(s>0?-1:1); wheelAcc-=s*90; } }
+  wheelLast=Math.round(e.deltaY*10)/10+(e.deltaMode?' (mode '+e.deltaMode+')':'');
+  if(building){
+    if(Math.abs(dy)>=40){ wheelAcc=0; rotate(dy>0?-1:1); wheelSteps++; }
+    else { if(now-wheelT>250) wheelAcc=0; wheelT=now; wheelAcc+=dy;
+      if(Math.abs(wheelAcc)>=90){ rotate(wheelAcc>0?-1:1); wheelSteps++; wheelAcc=0; } } }
   else camDist=clamp(camDist+dy*0.004,2.2,7); },{passive:false});
 function clampPitch(){ camPitch=view==='first'?clamp(camPitch,-1.2,1.2):clamp(camPitch,-0.3,1.1); }
-const KEYMAP={w:'f',arrowup:'f',s:'b',arrowdown:'b',a:'l',arrowleft:'l',d:'r',arrowright:'r'};
+// 0.4 keys: Q/E turn the camera (also while building), G waves, F uses a terminal (and leaves it), R turns the piece
+// (Shift+R the other way), Space jumps in build mode too. 0.3 had E wave, U use, Q/R turn the piece and F place.
+const KEYMAP={w:'f',arrowup:'f',s:'b',arrowdown:'b',a:'l',arrowleft:'l',d:'r',arrowright:'r',q:'tl',e:'tr'};
 window.addEventListener('keydown',e=>{ const k=String(e.key||'').toLowerCase();
   if(!$('diag').hidden){ if(k==='escape') setDiag(false); return; }
   touched();
-  if(TS.open){ if(k==='escape'||k==='u') closeTerminal(); return; }
+  if(TS.open){ if(k==='escape'||k==='f') closeTerminal(); return; }
   if(KEYMAP[k]){ keys[KEYMAP[k]]=1; e.preventDefault(); return; }
+  if(k===' '){ jumpReq=performance.now(); e.preventDefault(); return; }
   if(k==='b'){ setBuilding(!building); return; }
-  if(building){ if(k>='1'&&k<='7') selectPiece(+k-1); else if(k==='q') rotate(1); else if(k==='r') rotate(-1); else if(k==='f'||k==='enter') placePiece(); else if(k==='escape') setBuilding(false); return; }
-  if(k===' '){ jumpReq=performance.now(); e.preventDefault(); } else if(k==='e') doWave(); else if(k==='v') toggleView(); else if(k==='u') openTerminal(nearTerminal()); else if(k==='`') openDiag(); });
+  if(building){ if(k>='1'&&k<='7') selectPiece(+k-1); else if(k==='r') rotate(e.shiftKey?1:-1); else if(k==='enter') placePiece(); else if(k==='escape') setBuilding(false); return; }
+  if(k==='g') doWave(); else if(k==='v') toggleView(); else if(k==='f') useNearby(); else if(k==='`') openDiag(); });
 window.addEventListener('keyup',e=>{ const k=String(e.key||'').toLowerCase(); if(KEYMAP[k]) keys[KEYMAP[k]]=0; });
-window.addEventListener('blur',()=>{ keys.f=keys.b=keys.l=keys.r=0; stick=null; look=null; stickEl.hidden=true; });
+window.addEventListener('blur',()=>{ keys.f=keys.b=keys.l=keys.r=keys.tl=keys.tr=0; stick=null; look=null; stickEl.hidden=true; });
+function useNearby(){ const p=nearTerminal(); if(p) openTerminal(p); else flashStatus('Nothing to use here. Stand in front of a terminal’s screen.'); }
 function flash(el){ el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),160); }
 $('bJump').addEventListener('pointerdown',e=>{ e.preventDefault(); touched(); jumpReq=performance.now(); flash($('bJump')); });
+$('bJump2').addEventListener('pointerdown',e=>{ e.preventDefault(); touched(); jumpReq=performance.now(); flash($('bJump2')); });
 $('bWave').onclick=()=>{ touched(); doWave(); flash($('bWave')); };
 $('bView').onclick=()=>{ touched(); toggleView(); flash($('bView')); };
 $('bBuild').onclick=()=>{ touched(); setBuilding(true); };
@@ -1095,16 +1158,17 @@ function buildInfo(tp){
   const el=$('buildInfo'); if(!building) return; const g=B.ghost;
   if(tp<infoUntil){ el.innerHTML='<span class="bad"></span>'; el.firstChild.textContent=infoMsg; return; }
   if(B.sel===REMOVE){ el.innerHTML='<b>REMOVE</b> · '+(g.target?KINDS[g.target.k].name.toLowerCase()+(g.target.y>0.2?' at '+g.target.y.toFixed(1)+' m':''):'aim at a piece'); return; }
-  el.innerHTML='<b>'+KINDS[B.sel].name.toUpperCase()+'</b> · '+(g.r*15)+'°'+(g.y>0.2?' · '+g.y.toFixed(1)+' m up':'')+(g.snapped?' · <span class="snap">'+(g.how||'snapped')+'</span>':'')+(g.reason?'<br><span class="bad"></span>':'')+'<br>'+B.list.length+' pieces';
+  el.innerHTML='<b>'+KINDS[B.sel].name.toUpperCase()+'</b> · '+(g.r*15)+'°'+(g.y>0.2?' · '+g.y.toFixed(1)+' m up':'')+(g.snapped?' · <span class="snap">'+(g.how||'snapped')+'</span>':'')+(g.reason?'<br><span class="bad"></span>':'')+'<br>'+B.list.length+' pieces'+(mouse.on?' · wheel or R turns · click places':'');
   if(g.reason) el.querySelector('.bad').textContent=g.reason;
 }
 let wakeLock='not asked';
 function wake(){ if(wakeLock!=='not asked') return; wakeLock='asked';
   try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(()=>{ wakeLock='on'; },()=>{ wakeLock='refused'; }); else wakeLock='unsupported'; }catch(_){ wakeLock='refused'; } }
-if(!('ontouchstart' in window) && !(navigator.maxTouchPoints>0)) $('hint').textContent='WASD walks · drag to look · wheel zooms · Space jumps · E waves · V camera · B builds (wheel or Q/R turn, click places) · U uses a terminal';
+if(!('ontouchstart' in window) && !(navigator.maxTouchPoints>0)){ $('hint').textContent='WASD walks · Q/E turn · drag to look · wheel zooms · Space jumps · G waves · F uses · V camera · B builds (point to aim, wheel or R turns, click places)'; $('hint').classList.add('keys'); }
 
 // ================================================================ local movement and camera
 function updateLocal(dt,tp){
+  const turn=keys.tl-keys.tr; if(turn){ camYaw+=turn*TURN_KEY*dt; me.keyTurn+=dt; }
   if(me.act===2){ nuzzleStep(dt); return; }
   if(me.act===3){ terminalStep(dt); vertical(dt,tp); return; }
   let ix=keys.r-keys.l, iy=keys.f-keys.b;
@@ -1130,10 +1194,10 @@ function vertical(dt,tp){
   if(me.gr){
     const s=supportAt(me.x,me.z,me.y+STEP_UP);
     if(s>=me.y-0.02) me.y=s; else { me.gr=false; me.vy=0; }
-    if(me.gr && jumpReq && !building && me.act<=1){ me.vy=JUMP_V; me.gr=false; jumpReq=0; me.jumps++; }
+    if(me.gr && jumpReq && me.act<=1){ me.vy=JUMP_V; me.gr=false; jumpReq=0; me.jumps++; if(building) me.buildJumps++; }   // 0.4: building no longer stops a jump
   }
   if(!me.gr){ const py=me.y; me.vy-=GRAV*dt; me.y+=me.vy*dt;
-    if(me.vy>0){ const c=ceilingAt(me.x,me.z,py); if(me.y+HEAD>c){ me.y=Math.max(py,c-HEAD); me.vy=0; me.bonks++; } }
+    if(me.vy>0){ const lim=headRoom(me.x,me.z,me.yaw,py); if(me.y>lim){ me.y=Math.max(py,lim); me.vy=0; me.bonks++; } }
     else { const s=supportAt(me.x,me.z,py+0.02); if(me.y<=s){ me.y=s; me.vy=0; me.gr=true; } } }
   me.ys=me.gr?me.ys+(me.y-me.ys)*Math.min(1,dt*15):me.y;   // steps up onto a floor ease, jumps don't
 }
@@ -1175,7 +1239,10 @@ function checkResize(){ const w=stage.clientWidth||window.innerWidth, h=stage.cl
 // ================================================================ diagnostics
 const fpsHist=[], worstHist=[], startHist=[], startVis=[]; let frames=0, winStart=performance.now(), fpsNow=0, winWorst=0;
 let simSum=0, simMax=0, drawSum=0, drawMax=0, simMs=0, simMsMax=0, drawMs=0, drawMsMax=0, calls=0, tris=0, hidden=0;
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ hidden++; sendHidden(); } });
+// 0.4: time spent in the background isn't a slow frame. In 0.3 a desktop window put away for 22 s showed as a 22117 ms
+// worst frame and seconds at 1 and 2 fps. The first frame back starts a fresh second and is left out.
+let wasHidden=false, bgGaps=0, bgLongest=0;
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ hidden++; wasHidden=true; sendHidden(); } });
 window.addEventListener('pagehide',()=>sendHidden());
 function statsLine(arr){ const v=arr.map(q=>q.v); return v.length?('avg '+f0(v.reduce((a,b)=>a+b,0)/v.length)+' max '+f0(Math.max(...v))):'--'; }
 function diagText(){
@@ -1193,7 +1260,8 @@ function diagText(){
     'draw calls: '+calls+'  triangles: '+tris+'  pixel ratio: '+DPR+' (device '+(window.devicePixelRatio||1)+')',
     'buffer: '+renderer.domElement.width+'x'+renderer.domElement.height+'  css: '+vw+'x'+vh+'  viewport: '+window.innerWidth+'x'+window.innerHeight+
       (window.visualViewport?'  visual: '+Math.round(visualViewport.width)+'x'+Math.round(visualViewport.height):'')+'  resizes: '+resizes,
-    'standalone: '+((navigator.standalone||matchMedia('(display-mode: standalone)').matches)?'yes':'no')+'  hidden: '+hidden+'x  wake lock: '+wakeLock+'  wheel events: '+wheels+'  camera distance '+camDist.toFixed(1)+' m (pulled in '+cam.pulled+' frames)',
+    'standalone: '+((navigator.standalone||matchMedia('(display-mode: standalone)').matches)?'yes':'no')+'  hidden: '+hidden+'x'+(bgGaps?' (not counted as frames: '+bgGaps+', longest '+bgLongest.toFixed(1)+' s)':'')+'  wake lock: '+wakeLock,
+    'wheel events: '+wheels+' (last delta '+wheelLast+', piece turns '+wheelSteps+')  Q/E turning '+me.keyTurn.toFixed(1)+' s  camera distance '+camDist.toFixed(1)+' m (pulled in '+cam.pulled+' frames)',
     '--- room',
     'room: '+(N.state==='starting'?'waiting for use()':N.state==='no-runtime'?'no window.claude (not opened from the artifact link)':N.state==='unavailable'?'use("room") gave null after '+f0(N.useMs)+' ms':'ready after '+f0(N.useMs)+' ms'),
     'connection: '+conn+'  first connect after '+f0(N.firstConn)+' ms  drops (over 2 s): '+N.drops+'  blips: '+N.blips+'  down total: '+(N.downMs/1000).toFixed(1)+' s',
@@ -1223,7 +1291,9 @@ function diagText(){
     'yours: placed '+B.placed+'  removed '+B.removed+'  saved ok '+B.writeOk+'  removed ok '+B.delOk+(Object.keys(B.writeErr).length?'  errors '+JSON.stringify(B.writeErr):'  errors none')+
       '  save time median '+f0(pct(B.ack,0.5))+' max '+f0(B.ack.length?Math.max(...B.ack):null)+' ms',
     'others’ pieces: heard by event '+B.evHeard+'  event first '+B.evFirst+'  database first '+B.dbFirst+'  database behind the event: median '+f0(pct(B.dbAfterEv,0.5))+' max '+f0(B.dbAfterEv.length?Math.max(...B.dbAfterEv):null)+' ms',
-    'build mode: '+(building?'on, '+(B.sel===REMOVE?'remove':KINDS[B.sel].name.toLowerCase()+' at '+(B.rot*15)+'°'+(B.ghost.reason?' ('+B.ghost.reason+')':B.ghost.how?' ('+B.ghost.how+')':'')):'off')+'  wall bumps '+me.bumps+'  feet at '+me.y.toFixed(2)+' m'+(me.gr?'':' (in the air)'),
+    'build mode: '+(building?'on, '+(B.sel===REMOVE?'remove':KINDS[B.sel].name.toLowerCase()+' at '+(B.rot*15)+'°'+(B.ghost.reason?' ('+B.ghost.reason+')':B.ghost.how?' ('+B.ghost.how+')':'')):'off')+'  wall bumps '+me.bumps+'  feet at '+me.y.toFixed(2)+' m'+(me.gr?'':' (in the air)')+'  jumps while building '+me.buildJumps,
+    'last placed: '+(B.lastPlaced||'--'),
+    'clear all: '+(B.clear.runs||B.clear.running?(B.clear.running?'running, ':'')+'deleted '+B.clear.done+' of '+B.clear.n+(B.clear.ms!=null?' in '+(B.clear.ms/1000).toFixed(1)+' s':'')+'  retries '+B.clear.retries+(Object.keys(B.clear.err).length?'  errors '+JSON.stringify(B.clear.err):'  errors none'):'not used')+'  heard from others '+B.clearsHeard,
     'terminals: '+terms.length+(terms.length?' (samples logged '+terms.map(p=>termN(p.id)).join(', ')+')':'')+'  uses '+TS.uses+'  solved here '+TS.solved+'  heard solved '+TS.heard+(Object.keys(TS.saveErr).length?'  save errors '+JSON.stringify(TS.saveErr):'')+
       (TS.open?'  open: '+TS.parts.length+' at it, you '+(TS.watcher?'watch':TS.mineF&&TS.mineA?'turn both':TS.mineF?'turn frequency':'turn amplitude')+', match '+TS.m.toFixed(2)+' held '+TS.held.toFixed(1)+' s':''));
   lines.push('3d library: '+(window.__lib||'?')+'  errors: '+errs.n+(errs.ext?'  (plus '+errs.ext+' hidden "Script error." from outside the page)':''));
@@ -1232,11 +1302,21 @@ function diagText(){
   return lines.join('\n');
 }
 function setDiag(on){ $('diag').hidden=!on; $('diagShade').hidden=!on; }
-function openDiag(){ $('diagText').value=diagText(); $('diagMsg').textContent='Copy this and paste it back to Claude.'; setDiag(true); }
+function openDiag(){ $('diagText').value=diagText(); $('diagMsg').textContent='Copy this and paste it back to Claude.'; clearArm=0; clearBtn(); setDiag(true); }
 $('readout').onclick=openDiag;
 $('readout').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDiag(); } });
 $('diagShade').addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); setDiag(false); });
 $('bClose').onclick=()=>setDiag(false);
+// Clear all asks twice: the first tap arms it for 4 s and says how many pieces will go.
+let clearArm=0;
+function clearBtn(){ const b=$('bClear'); b.disabled=!B.db || B.readOnly || B.clear.running; if(performance.now()-clearArm>4000){ b.textContent=B.clear.running?'Clearing…':'Clear all'; b.classList.remove('arm'); } }
+$('bClear').onclick=()=>{ const tp=performance.now();
+  if(!B.db || B.readOnly){ $('diagMsg').textContent='You can’t change pieces here.'; return; }
+  if(B.clear.running) return;
+  if(tp-clearArm>4000){ clearArm=tp; const b=$('bClear'); b.textContent='Tap again: clear '+B.list.length; b.classList.add('arm');
+    $('diagMsg').textContent='This deletes every piece for everyone.'; setTimeout(clearBtn,4100); return; }
+  clearArm=0; clearAll().then(()=>{ clearBtn(); $('diagText').value=diagText(); }); clearBtn();
+  $('diagMsg').textContent='Clearing all pieces…'; };
 const RATES=[10,15,20,30], SMOOTHS=['auto',120,200,0,60];
 $('bRate').onclick=()=>{ N.sendHz=RATES[(RATES.indexOf(N.sendHz)+1)%RATES.length]; $('bRate').textContent='Send '+N.sendHz+'/s'; $('diagText').value=diagText(); };
 $('bSmooth').onclick=()=>{ N.smooth=SMOOTHS[(SMOOTHS.indexOf(N.smooth)+1)%SMOOTHS.length]; $('bSmooth').textContent=N.smooth==='auto'?'Smooth auto':N.smooth?'Smooth '+N.smooth+' ms':'Smooth off';
@@ -1283,6 +1363,7 @@ let last=performance.now(), hudT=0, suitT=0, bootSec=0;
 function frame(){
   requestAnimationFrame(frame);
   const tp=performance.now(); let dt=(tp-last)/1000; last=tp;
+  if(wasHidden && !document.hidden){ wasHidden=false; bgGaps++; if(dt>bgLongest) bgLongest=dt; frames=0; winStart=tp; winWorst=0; dt=0; }
   const ft=dt*1000; if(ft>winWorst) winWorst=ft; frames++;
   if(tp-winStart>=1000){ fpsNow=Math.round(frames*1000/(tp-winStart)); frames=0; winStart=tp;
     pushCap(fpsHist,fpsNow,10); pushCap(worstHist,winWorst,10); winWorst=0;
@@ -1312,10 +1393,10 @@ function frame(){
     }
     updateHearts(dt);
     updateCamera(dt);
+    camera.updateMatrixWorld();   // 0.4: before the ghost, which may aim through the mouse pointer
     if(building) updateGhost();
     if(TS.open){ drawTerm(ts); }
     beacon.visible=(t%1000)<140;
-    camera.updateMatrixWorld();
     for(const R of N.peers.values()) placeTag(R,vw,vh);
     if(tp-hudT>250){ hudT=tp; hud(t,tp); for(const R of N.peers.values()) tagText(R,t); buildInfo(tp); if(TS.open) termUI(tp); }
     const s1=performance.now();

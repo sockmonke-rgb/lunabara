@@ -22,6 +22,15 @@ for s in 7 11 23 99 314; do
   echo "$out" | grep -qE 'max overlap into a building 0\.00 greenhouse wall crossings 0 habitat dome crossings 0 pad crossings 0 wallow side crossings 0 bathhouse wall crossings 0' || fail=1
 done
 
+# The co-op net probe (net/): its own build and its own simulation
+if [ -f net/lunabara-net-probe.html ]; then
+  echo "=== coopsim (net probe)"
+  out=$(node net/coopsim.js net/lunabara-net-probe.html 2>&1); code=$?
+  echo "$out" | grep -E '^FAIL|all checks passed|FAILED'
+  echo "  $(echo "$out" | grep -c '^PASS') checks passed"
+  if [ $code -ne 0 ] || echo "$out" | grep -q '^FAIL'; then fail=1; fi
+fi
+
 echo
 if [ $fail -eq 0 ]; then echo "ALL PASS"; else echo "SOMETHING FAILED"; fi
 exit $fail

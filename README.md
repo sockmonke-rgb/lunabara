@@ -43,6 +43,10 @@ The **Wallow** station is the postcard shot: a capybara in the wallow under the 
 
 The Lunabara artifact link always opens the newest build; each publish replaces it in place, and older builds stay in its version history. `index.html` in this repo is the same build as the live artifact (0.51 at the first commit). Opened anywhere other than the artifact, progress is saved on that device only.
 
+## Co-op net probe
+
+`net/` holds a separate prototype for the next version of Lunabara: a co-op survival game in the spirit of Raft, in first person and over the shoulder, still with capybaras. Players walk around together, build with floors, walls, rails, lamps, crates and terminals that everyone shares and that are saved, nuzzle each other, and solve a two-player science terminal. It runs as a claude.ai artifact, because co-op uses the artifact's shared room and database; elsewhere it plays solo. `net/README.md` has how to test it, how it works, and its changelog from 0.1 to 0.4.
+
 ## Tests
 
 Node 18 or later, no dependencies. From the repo root:
@@ -51,7 +55,7 @@ Node 18 or later, no dependencies. From the repo root:
 npm test
 ```
 
-That parses the game script and runs every headless check below against `index.html`, plus the route sim on five seeds. Each check prints PASS or FAIL. See TESTPLAN for what passing means and the on-device checks.
+That parses the game script and runs every headless check below against `index.html`, plus the route sim on five seeds and the co-op simulation against the net probe. Each check prints PASS or FAIL. See TESTPLAN for what passing means and the on-device checks.
 
 ## Files
 
@@ -74,6 +78,9 @@ That parses the game script and runs every headless check below against `index.h
 | `tools/shots.py` | Renders a build in headless Chromium with a scripted scenario and saves screenshots and the Diag (see WORKING-WITH-CLAUDE). Needs three.js r128's `three.min.js` and `OrbitControls.js` next to it; they're not committed |
 | `tools/scenario.json` | Example scenario for `shots.py`: a wave, a lander coming down, a crewmate stepping off |
 | `tools/test-all.sh` | What `npm test` runs |
+| `net/lunabara-net-probe.html` | The co-op net probe, one self-contained file (0.4; 0.1 to 0.3 are in this folder's history) |
+| `net/README.md` | The net probe's test steps, how its netcode and building work, and its changelog with device results |
+| `net/coopsim.js` | Runs several copies of the net probe on one fake clock, joined by a fake room and database with latency, jitter, drops and a view-only player, and checks movement, building, the nuzzle and the terminal (`node net/coopsim.js net/lunabara-net-probe.html`) |
 | `LICENSE` | MIT |
 
 ## License
